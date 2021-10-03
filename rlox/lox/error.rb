@@ -1,0 +1,1 @@
+class LoxError < RuntimeError; end
