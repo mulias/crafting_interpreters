@@ -5,6 +5,7 @@ require_relative "./scanner"
 require_relative "./token"
 require_relative "./parser"
 require_relative "./ast_printer"
+require_relative "./interpreter"
 
 class LoxSingleton
   include Singleton
@@ -12,6 +13,12 @@ class LoxSingleton
 
   def initialize()
     @had_error = false
+    @had_runtime_error = false
+
+    @scanner = Scanner.new()
+    @parser = Parser.new()
+    @ast_printer = AstPrinter.new()
+    @interpreter = Interpreter.new()
   end
 
   def main(args)
@@ -28,24 +35,25 @@ class LoxSingleton
   def run_file(path)
     run(File.read(path))
     exit(65) if @had_error
+    exit(70) if @had_runtime_error
   end
 
   def run_prompt()
     while line = Readline.readline("> ", true)
       run(line)
       @had_error = false
+      @had_runtime_error = false
     end
   end
 
   def run(source)
-    scanner = Scanner.new(source)
-    tokens = scanner.scan_tokens()
-    parser = Parser.new(tokens)
-    expression = parser.parse()
+    tokens = @scanner.scan_tokens(source)
+    expression = @parser.parse(tokens)
 
-    return if @had_error
+    return if @had_error # stop if there was a syntax error
 
-    puts AstPrinter.print(expression)
+    puts(@ast_printer.print(expression))
+    puts(@interpreter.interpret(expression))
   end
 
   def error(source, message)
@@ -57,13 +65,22 @@ class LoxSingleton
     when source.is_a?(Token)
       report(source.line_num, " at '#{source.lexeme}'", message)
     else
-      puts "Error reporting error, source #{source} unknown"
+      puts("Error reporting error, source #{source} unknown")
     end
   end
+
+  def runtime_error(token, message)
+    STDERR.puts("#{message}\n[line #{token.line_num}]")
+    @had_runtime_error = true
+    return nil
+  end
+
+  private
 
   def report(line_num, where, message)
     puts("[line #{line_num}] Error#{where}: #{message}")
     @had_error = true
+    return nil
   end
 end
 

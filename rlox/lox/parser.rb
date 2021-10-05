@@ -4,12 +4,13 @@ require_relative "./error"
 class Parser
   class ParseError < LoxError; end
 
-  def initialize(tokens)
-    @tokens = tokens
-    @tokens_pos = 0
+  def initialize()
+    starting_state(nil)
   end
 
-  def parse()
+  def parse(tokens)
+    starting_state(tokens)
+
     begin
       expression()
     rescue ParseError
@@ -127,5 +128,10 @@ class Parser
     end
 
     advance()
+  end
+
+  def starting_state(tokens)
+    @tokens = tokens
+    @tokens_pos = 0
   end
 end

@@ -1,15 +1,13 @@
 require_relative "./token"
 
 class Scanner
-  def initialize(source)
-    @source = source
-    @tokens = []
-    @start_pos = 0
-    @current_pos = 0
-    @line_num = 1
+  def initialize()
+    starting_state(nil)
   end
 
-  def scan_tokens()
+  def scan_tokens(source)
+    starting_state(source)
+
     while !is_at_end()
       @start_pos = @current_pos
       scan_token()
@@ -45,31 +43,31 @@ class Scanner
     when "<"; match("=") ? add_token(:LESS_EQUAL) : add_token(:LESS)
     when ">"; match("=") ? add_token(:GREATER_EQUAL) : add_token(:GREATER)
     when "/"; match("/") ? comment() : add_token(:SLASH)
-    when try(:is_whitespace); @tokens
+    when pred(:whitespace?); @tokens
     when "\n"; @line_num += 1; @tokens
     when "\""; string()
-    when try(:is_digit); number()
-    when try(:is_alpha); identifier()
+    when pred(:digit?); number()
+    when pred(:alpha?); identifier()
     else Lox.error(@line_num, "Unexpected character #{char}.")
     end
   end
 
-  def is_whitespace(char)
+  def whitespace?(char)
     [" ", "\r", "\t"].member?(char)
   end
 
-  def is_digit(char)
+  def digit?(char)
     ("0".."9").member?(char)
   end
 
-  def is_alpha(char)
+  def alpha?(char)
     (char >= "a" && char <= "z") ||
     (char >= "A" && char <= "Z") ||
     char == "_"
   end
 
-  def is_alpha_numeric(char)
-    is_alpha(char) || is_digit(char)
+  def alpha_numeric?(char)
+    alpha?(char) || digit?(char)
   end
 
   def comment()
@@ -94,19 +92,19 @@ class Scanner
   end
 
   def number()
-    advance() while is_digit(peek())
+    advance() while digit?(peek())
 
     # Look for a fractional part.
-    if peek() == "." && is_digit(peek_next())
+    if peek() == "." && digit?(peek_next())
       advance() # Consume the dot.
-      advance() while is_digit(peek())
+      advance() while digit?(peek())
     end
 
     add_token(:NUMBER, token_text().to_f)
   end
 
   def identifier()
-    advance() while is_alpha_numeric(peek())
+    advance() while alpha_numeric?(peek())
 
     keywords = %w(
       and class else false for fun if nil or
@@ -148,7 +146,15 @@ class Scanner
     @source[@current_pos + 1] || ""
   end
 
-  def try(method_name)
+  def pred(method_name)
     lambda(&method(method_name))
+  end
+
+  def starting_state(source)
+    @source = source
+    @tokens = []
+    @start_pos = 0
+    @current_pos = 0
+    @line_num = 1
   end
 end
