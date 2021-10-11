@@ -1,4 +1,5 @@
 require_relative "./expr"
+require_relative "./stmt"
 require_relative "./error"
 
 class Parser
@@ -11,11 +12,35 @@ class Parser
   def parse(tokens)
     starting_state(tokens)
 
-    begin
-      expression()
-    rescue ParseError
-      return nil
+    statements = []
+
+    while !is_at_end()
+      statements.push(statement())
     end
+
+    statements
+  end
+
+  private
+
+  def statement()
+    if match(:PRINT)
+      printStatement()
+    else
+      expressionStatement()
+    end
+  end
+
+  def printStatement()
+    expr = expression()
+    consume(:SEMICOLON, "Expect ';' after value.")
+    Stmt::Print.new(expr)
+  end
+
+  def expressionStatement()
+    expr = expression()
+    consume(:SEMICOLON, "Expect ';' after value.")
+    Stmt::Expression.new(expr)
   end
 
   def expression()
@@ -61,8 +86,6 @@ class Parser
 
     raise error(peek(), "Expected expression")
   end
-
-  private
 
   def binary_expr(left_parser, tokens, right_parser)
     expr = method(left_parser).call()

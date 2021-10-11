@@ -1,7 +1,17 @@
-# Implements the visitor pattern for `Expr` objects.
+# Implements the visitor pattern for `Stmt` and `Expr` objects.
 class AstPrinter
-  def print(expr)
-    expr.accept(self)
+  def print(statements)
+    puts("--- AST PRINTER ---")
+    statements.each { |stmt| puts stmt.accept(self) }
+    puts("--- AST PRINTER ---\n\n")
+  end
+
+  def visitStmtPrint(stmt)
+    parenthesize("print", stmt.expr)
+  end
+
+  def visitStmtExpression(stmt)
+    parenthesize("expr", stmt.expr)
   end
 
   def visitBinaryExpr(expr)

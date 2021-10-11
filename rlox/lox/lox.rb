@@ -48,12 +48,12 @@ class LoxSingleton
 
   def run(source)
     tokens = @scanner.scan_tokens(source)
-    expression = @parser.parse(tokens)
+    statements = @parser.parse(tokens)
 
     return if @had_error # stop if there was a syntax error
 
-    puts(@ast_printer.print(expression))
-    puts(@interpreter.interpret(expression))
+    @ast_printer.print(statements)
+    @interpreter.interpret(statements)
   end
 
   def error(source, message)

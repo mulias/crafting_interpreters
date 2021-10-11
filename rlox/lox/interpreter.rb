@@ -1,6 +1,6 @@
 require_relative "./error"
 
-# Implements the visitor pattern for `Expr` objects.
+# Implements the visitor pattern for `Stmt` and `Expr` objects.
 class Interpreter
   class InterpreterError < LoxError
     attr_reader :token
@@ -11,12 +11,21 @@ class Interpreter
     end
   end
 
-  def interpret(expr)
+  def interpret(statements)
     begin
-      stringify(evaluate(expr))
+      statements.each { |stmt| evaluate(stmt) }
     rescue InterpreterError => e
       Lox.runtime_error(e.token, e.message)
     end
+  end
+
+  def visitStmtPrint(stmt)
+    val = evaluate(stmt.expr)
+    puts(stringify(val))
+  end
+
+  def visitStmtExpression(stmt)
+    evaluate(stmt.expt)
   end
 
   def visitBinaryExpr(expr)
@@ -75,8 +84,8 @@ class Interpreter
 
   private
 
-  def evaluate(expr)
-    expr.accept(self)
+  def evaluate(expr_or_stmt)
+    expr_or_stmt.accept(self)
   end
 
   def stringify(lox_val)
