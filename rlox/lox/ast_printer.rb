@@ -6,28 +6,28 @@ class AstPrinter
     puts("--- AST PRINTER ---\n\n")
   end
 
-  def visitStmtPrint(stmt)
+  def visit_stmt_print(stmt)
     parenthesize("print", stmt.expr)
   end
 
-  def visitStmtExpression(stmt)
+  def visit_stmt_expression(stmt)
     parenthesize("expr", stmt.expr)
   end
 
-  def visitBinaryExpr(expr)
+  def visit_expr_binary(expr)
     parenthesize(expr.operator_token.lexeme, expr.left_expr, expr.right_expr)
   end
 
-  def visitGroupingExpr(expr)
+  def visit_expr_grouping(expr)
     parenthesize("group", expr.expr)
   end
 
-  def visitLiteralExpr(expr)
+  def visit_expr_literal(expr)
     return "nil" if expr.value == nil
     expr.value.to_s
   end
 
-  def visitUnaryExpr(expr)
+  def visit_expr_unary(expr)
     parenthesize(expr.operator_token.lexeme, expr.right_expr)
   end
 

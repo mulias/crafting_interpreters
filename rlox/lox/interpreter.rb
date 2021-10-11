@@ -19,16 +19,16 @@ class Interpreter
     end
   end
 
-  def visitStmtPrint(stmt)
+  def visit_stmt_print(stmt)
     val = evaluate(stmt.expr)
     puts(stringify(val))
   end
 
-  def visitStmtExpression(stmt)
-    evaluate(stmt.expt)
+  def visit_stmt_expression(stmt)
+    evaluate(stmt.expr)
   end
 
-  def visitBinaryExpr(expr)
+  def visit_expr_binary(expr)
     operator = expr.operator_token
     left = evaluate(expr.left_expr)
     right = evaluate(expr.right_expr)
@@ -63,15 +63,15 @@ class Interpreter
     end
   end
 
-  def visitGroupingExpr(expr)
+  def visit_expr_grouping(expr)
     evaluate(expr.expr)
   end
 
-  def visitLiteralExpr(expr)
+  def visit_expr_literal(expr)
     expr.value
   end
 
-  def visitUnaryExpr(expr)
+  def visit_expr_unary(expr)
     right = evaluate(expr.right_expr)
 
     case expr.operator_token.type

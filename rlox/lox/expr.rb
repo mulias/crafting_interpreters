@@ -1,13 +1,10 @@
+require_relative "./visitable"
+
 class Expr < Struct
-  # Implement the visitor pattern, an expr visitor must implement the methods
-  # `visitBinaryExpr`, `visitGroupingExpr` etc.
-  def accept(visitor)
-    expr_name = self.class.name.split("::").last
-    visitor.method("visit#{expr_name}Expr").call(self)
-  end
+  include Visitable
 end
 
-Binary = Expr.new(:left_expr, :operator_token, :right_expr)
-Grouping = Expr.new(:expr)
-Literal = Expr.new(:value)
-Unary = Expr.new(:operator_token, :right_expr)
+Expr.new("Binary", :left_expr, :operator_token, :right_expr)
+Expr.new("Grouping", :expr)
+Expr.new("Literal", :value)
+Expr.new("Unary", :operator_token, :right_expr)

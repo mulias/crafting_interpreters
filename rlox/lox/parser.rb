@@ -67,21 +67,21 @@ class Parser
     if match(:BANG, :MINUS)
       operator_token = previous()
       right_expr = unary()
-      return Unary.new(operator_token, right_expr)
+      return Expr::Unary.new(operator_token, right_expr)
     end
     primary()
   end
 
   def primary()
-    return Literal.new(false) if match(:FALSE)
-    return Literal.new(true) if match(:TRUE)
-    return Literal.new(nil) if match(:NIL)
-    return Literal.new(previous().literal) if match(:NUMBER, :STRING)
+    return Expr::Literal.new(false) if match(:FALSE)
+    return Expr::Literal.new(true) if match(:TRUE)
+    return Expr::Literal.new(nil) if match(:NIL)
+    return Expr::Literal.new(previous().literal) if match(:NUMBER, :STRING)
 
     if match(:LEFT_PAREN)
       expr = expression()
       consume(:RIGHT_PAREN, "Expect ')' after expression.")
-      return Grouping.new(expr)
+      return Expr::Grouping.new(expr)
     end
 
     raise error(peek(), "Expected expression")
@@ -92,7 +92,7 @@ class Parser
     while match(*tokens)
       operator_token = previous()
       right_expr = method(right_parser).call()
-      expr = Binary.new(expr, operator_token, right_expr)
+      expr = Expr::Binary.new(expr, operator_token, right_expr)
     end
     expr
   end
