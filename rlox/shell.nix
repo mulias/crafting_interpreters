@@ -8,4 +8,7 @@ in
 
 mkShell {
   buildInputs = [ unstable.ruby unstable.rufo ];
+  shellHook = ''
+    export NVIM_RUFO_LSP=true
+  '';
 }
