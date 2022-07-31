@@ -21,7 +21,7 @@ class Parser
     statements
   end
 
-  private
+  private #=====================================================================
 
   def statement()
     if match(:PRINT)

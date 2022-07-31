@@ -75,7 +75,7 @@ class LoxSingleton
     return nil
   end
 
-  private
+  private #=====================================================================
 
   def report(line_num, where, message)
     puts("[line #{line_num}] Error#{where}: #{message}")

@@ -1,7 +1,6 @@
 require_relative "./error"
 require_relative "./environment"
 
-# Implements the visitor pattern for `Stmt` and `Expr` objects.
 class Interpreter
   class InterpreterError < LoxError
     attr_reader :token
@@ -99,7 +98,7 @@ class Interpreter
     @environment.get(expr.name)
   end
 
-  private
+  private #=====================================================================
 
   def evaluate(expr_or_stmt)
     expr_or_stmt.accept(self)

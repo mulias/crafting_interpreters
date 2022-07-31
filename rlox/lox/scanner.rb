@@ -19,7 +19,7 @@ class Scanner
     @tokens
   end
 
-  private
+  private #=====================================================================
 
   def is_at_end()
     @current_pos >= @source.length

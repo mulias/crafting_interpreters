@@ -1,4 +1,3 @@
-# Implements the visitor pattern for `Stmt` and `Expr` objects.
 class AstPrinter
   def print(statements)
     puts("--- AST PRINTER ---")
@@ -39,7 +38,7 @@ class AstPrinter
     expr.name
   end
 
-  private
+  private #=====================================================================
 
   def parenthesize(name, *exprs)
     parenthesized_exprs = exprs
