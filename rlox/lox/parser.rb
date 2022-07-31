@@ -15,7 +15,7 @@ class Parser
     statements = []
 
     while !is_at_end()
-      statements.push(statement())
+      statements.push(declaration())
     end
 
     statements
@@ -25,19 +25,27 @@ class Parser
 
   def statement()
     if match(:PRINT)
-      printStatement()
+      print_statement()
     else
-      expressionStatement()
+      expression_statement()
     end
   end
 
-  def printStatement()
+  def print_statement()
     expr = expression()
     consume(:SEMICOLON, "Expect ';' after value.")
     Stmt::Print.new(expr)
   end
 
-  def expressionStatement()
+  def var_declaration()
+    name = consume(:IDENTIFIER, "Expect variable name")
+    initializer = match(:EQUAL) ? expression() : nil
+
+    consume(:SEMICOLON, "Expect ';' after variable declaration.")
+    Stmt::Var.new(name, initializer)
+  end
+
+  def expression_statement()
     expr = expression()
     consume(:SEMICOLON, "Expect ';' after value.")
     Stmt::Expression.new(expr)
@@ -45,6 +53,18 @@ class Parser
 
   def expression()
     equality()
+  end
+
+  def declaration()
+    begin
+      if match(:VAR)
+        return var_declaration()
+      end
+      statement()
+    rescue ParseError => e
+      syncronize()
+      nil
+    end
   end
 
   def equality()
@@ -77,6 +97,7 @@ class Parser
     return Expr::Literal.new(true) if match(:TRUE)
     return Expr::Literal.new(nil) if match(:NIL)
     return Expr::Literal.new(previous().literal) if match(:NUMBER, :STRING)
+    return Expr::Variable.new(previous()) if match(:IDENTIFIER)
 
     if match(:LEFT_PAREN)
       expr = expression()

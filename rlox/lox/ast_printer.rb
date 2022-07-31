@@ -10,6 +10,10 @@ class AstPrinter
     parenthesize("print", stmt.expr)
   end
 
+  def visit_stmt_var(stmt)
+    parenthesize("var #{stmt.name.lexeme}", stmt.initializer)
+  end
+
   def visit_stmt_expression(stmt)
     parenthesize("expr", stmt.expr)
   end
@@ -29,6 +33,10 @@ class AstPrinter
 
   def visit_expr_unary(expr)
     parenthesize(expr.operator_token.lexeme, expr.right_expr)
+  end
+
+  def visit_expr_variable(expr)
+    expr.name
   end
 
   private

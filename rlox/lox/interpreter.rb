@@ -1,4 +1,5 @@
 require_relative "./error"
+require_relative "./environment"
 
 # Implements the visitor pattern for `Stmt` and `Expr` objects.
 class Interpreter
@@ -11,10 +12,16 @@ class Interpreter
     end
   end
 
+  def initialize()
+    @environment = Environment.new()
+  end
+
   def interpret(statements)
     begin
       statements.each { |stmt| evaluate(stmt) }
     rescue InterpreterError => e
+      Lox.runtime_error(e.token, e.message)
+    rescue Environment::EnvironmentError => e
       Lox.runtime_error(e.token, e.message)
     end
   end
@@ -22,6 +29,12 @@ class Interpreter
   def visit_stmt_print(stmt)
     val = evaluate(stmt.expr)
     puts(stringify(val))
+  end
+
+  def visit_stmt_var(stmt)
+    value = stmt.initializer != nil ? evaluate(stmt.initializer) : nil
+    @environment.define(stmt.name.lexeme, value)
+    return nil
   end
 
   def visit_stmt_expression(stmt)
@@ -80,6 +93,10 @@ class Interpreter
       -right
     when :BANG; !is_truthy(right)
     end
+  end
+
+  def visit_expr_variable(expr)
+    @environment.get(expr.name)
   end
 
   private

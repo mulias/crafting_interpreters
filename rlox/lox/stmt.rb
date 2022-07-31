@@ -6,3 +6,4 @@ end
 
 Stmt.new("Expression", :expr)
 Stmt.new("Print", :expr)
+Stmt.new("Var", :name, :initializer)
