@@ -14,8 +14,9 @@ class Environment
     @values = Hash.new()
   end
 
-  def define(name, token)
-    @values[name] = token
+  def define(name, value)
+    @values[name] = value
+    nil
   end
 
   def get(token)
