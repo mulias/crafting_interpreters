@@ -1,0 +1,39 @@
+class Expr
+  include Visitable
+
+  class Binary < Expr
+    attr_reader left_expr: Expr
+
+    attr_reader operator_token: Token
+
+    attr_reader right_expr: Expr
+
+    def initialize: (Expr left_expr, Token operator_token, Expr right_expr) -> void
+  end
+
+  class Grouping < Expr
+    attr_reader expr: Expr
+
+    def initialize: (Expr expr) -> void
+  end
+
+  class Literal < Expr
+    attr_reader value: lox_value
+
+    def initialize: (lox_value value) -> void
+  end
+
+  class Unary < Expr
+    attr_reader operator_token: Token
+
+    attr_reader right_expr: Expr
+
+    def initialize: (Token operator_token, Expr right_expr) -> void
+  end
+
+  class Variable < Expr
+    attr_reader name: Token
+
+    def initialize: (Token name) -> void
+  end
+end

@@ -1,0 +1,29 @@
+class LoxSingleton
+  @had_error: bool
+  @had_runtime_error: bool
+
+  @scanner: Scanner
+  @parser: Parser
+  @ast_printer: AstPrinter
+  @interpreter: Interpreter
+
+  def initialize: () -> void
+
+  def main: (Array[String] args) -> void
+
+  def run_file: (String path) -> void
+
+  def run_prompt: () -> void
+
+  def run: (String source) -> void
+
+  def error: (String source, String message) -> nil
+
+  def runtime_error: (Token token, String message) -> nil
+
+  private
+
+  def report: (Integer line_num, String where, String message) -> nil
+end
+
+Lox: singleton(LoxSingleton)

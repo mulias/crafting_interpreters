@@ -1,0 +1,49 @@
+class Scanner
+  @source: String | nil
+  @tokens: Array[Token]
+  @start_pos: Integer
+  @current_pos: Integer
+  @line_num: Integer
+
+  def initialize: () -> void
+
+  def scan_tokens: (String source) -> Array[Token]
+
+  private
+
+  def at_end?: () -> bool
+
+  def scan_token: () -> Array[Token]
+
+  def whitespace?: (String char) -> bool
+
+  def digit?: (String char) -> bool
+
+  def alpha?: (String char) -> bool
+
+  def alpha_numeric?: (String char) -> bool
+
+  def comment: () -> Array[Token]
+
+  def string: () -> Array[Token]
+
+  def number: () -> Array[Token]
+
+  def identifier: () -> Array[Token]
+
+  def token_text: () -> String
+
+  def add_token: (Symbol type, ?lox_value literal) -> Array[Token]
+
+  def advance: () -> String
+
+  def match: (String expected) -> bool
+
+  def peek: () -> String
+
+  def peek_next: () -> String
+
+  def pred: (Symbol method_name) -> Proc
+
+  def starting_state: (String source) -> void
+end

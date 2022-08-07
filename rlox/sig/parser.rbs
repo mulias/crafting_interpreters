@@ -1,0 +1,59 @@
+class Parser
+  class ParseError < LoxError
+  end
+
+  @tokens: Array[Token]
+  @tokens_pos: Integer
+
+  def initialize: () -> void
+
+  def parse: (Array[Token] tokens) -> Array[Stmt]
+
+  private
+
+  def statement: () -> Stmt
+
+  def print_statement: () -> Stmt::Print
+
+  def var_declaration: () -> Stmt::Var
+
+  def expression_statement: () -> Stmt::Expression
+
+  def expression: () -> Expr
+
+  def declaration: () -> (Stmt | nil)
+
+  def equality: () -> Expr::Binary
+
+  def comparison: () -> Expr::Binary
+
+  def term: () -> Expr::Binary
+
+  def factor: () -> Expr::Binary
+
+  def unary: () -> (Expr::Unary | Expr::Literal | Expr::Variable | Expr::Grouping)
+
+  def primary: () -> (Expr::Literal | Expr::Variable | Expr::Grouping)
+
+  def binary_expr: (Symbol left_parser, Array[Symbol] tokens, Symbol right_parser) -> Expr::Binary
+
+  def match?: (*Symbol token_types) -> bool
+
+  def check?: (Symbol type) -> bool
+
+  def advance: () -> Token
+
+  def at_end?: () -> bool
+
+  def peek: () -> Token
+
+  def previous: () -> Token
+
+  def consume: (Symbol type, String error_message) -> Token
+
+  def error: (Token token, String error_message) -> ParseError
+
+  def syncronize: () -> (Token | nil)
+
+  def starting_state: (Array[Token] tokens) -> void
+end

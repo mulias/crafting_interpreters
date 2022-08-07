@@ -1,0 +1,3 @@
+module Visitable
+  def accept: [T] (top visitor) -> T
+end

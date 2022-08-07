@@ -1,0 +1,23 @@
+class AstPrinter
+  def print: (Array[Stmt] statements) -> void
+
+  def visit_stmt_print: (Stmt::Print stmt) -> String
+
+  def visit_stmt_var: (Stmt::Var stmt) -> String
+
+  def visit_stmt_expression: (Stmt::Expression stmt) -> String
+
+  def visit_expr_binary: (Expr::Binary expr) -> String
+
+  def visit_expr_grouping: (Expr::Grouping expr) -> String
+
+  def visit_expr_literal: (Expr::Literal expr) -> String
+
+  def visit_expr_unary: (Expr::Unary expr) -> String
+
+  def visit_expr_variable: (Expr::Variable expr) -> String
+
+  private
+
+  def parenthesize: (String name, *(Expr | nil) exprs) -> String
+end

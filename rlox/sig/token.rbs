@@ -1,0 +1,15 @@
+class Token
+  attr_reader type: Symbol
+
+  attr_reader lexeme: String
+
+  attr_reader literal: lox_value
+
+  attr_reader line_num: Integer
+
+  def initialize: (Symbol type, String lexeme, lox_value literal, Integer line_num) -> void
+
+  def type?: (Symbol test) -> bool
+
+  def to_s: () -> String
+end

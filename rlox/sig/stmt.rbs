@@ -1,0 +1,24 @@
+class Stmt
+  include Visitable
+
+  class Expression < Stmt
+    attr_reader expr: Expr
+
+    def initialize: (Expr expr) -> void
+  end
+
+  class Print < Stmt
+    attr_reader expr: Expr
+
+    def initialize: (Expr expr) -> void
+  end
+
+  class Var < Stmt
+    attr_reader name: Token
+
+    attr_reader initializer: Expr | nil
+
+    def initialize: (Token name, Expr | nil initializer) -> void
+  end
+end
+

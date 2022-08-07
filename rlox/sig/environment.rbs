@@ -1,0 +1,15 @@
+class Environment
+  class EnvironmentError < LoxError
+    attr_reader token: Token
+
+    def initialize: (Token token, String message) -> void
+  end
+
+  @values: Hash[String, lox_value]
+
+  def initialize: () -> void
+
+  def define: (String name, lox_value value) -> void
+
+  def get: (Token token) -> lox_value
+end
