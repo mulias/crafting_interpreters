@@ -8,7 +8,7 @@ class Scanner
   def scan_tokens(source)
     starting_state(source)
 
-    while !is_at_end()
+    while !at_end?()
       @start_pos = @current_pos
       scan_token()
     end
@@ -21,7 +21,7 @@ class Scanner
 
   private #=====================================================================
 
-  def is_at_end()
+  def at_end?()
     @current_pos >= @source.length
   end
 
@@ -71,17 +71,17 @@ class Scanner
   end
 
   def comment()
-    advance() while peek() != "\n" && !is_at_end()
+    advance() while peek() != "\n" && !at_end?()
     @tokens
   end
 
   def string()
-    while peek() != "\"" && !is_at_end()
+    while peek() != "\"" && !at_end?()
       @line_num += 1 if peek() == "\n"
       advance()
     end
 
-    if is_at_end()
+    if at_end?()
       Lox.error(@line_num, "Unterminated string.")
       return @tokens
     end
@@ -131,7 +131,7 @@ class Scanner
   end
 
   def match(expected)
-    return false if is_at_end()
+    return false if at_end?()
     return false if @source[@current_pos] != expected
 
     @current_pos += 1

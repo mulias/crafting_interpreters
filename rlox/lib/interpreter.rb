@@ -70,8 +70,8 @@ class Interpreter
     when :PLUS
       check_number_or_string_operands(operator, left, right)
       left + right
-    when :BANG_EQUAL; !is_equal(left, right)
-    when :EQUAL_EQUAL; is_equal(left, right)
+    when :BANG_EQUAL; !equal?(left, right)
+    when :EQUAL_EQUAL; equal?(left, right)
     end
   end
 
@@ -90,7 +90,7 @@ class Interpreter
     when :MINUS
       check_number_operand(expr.operator_token, right)
       -right
-    when :BANG; !is_truthy(right)
+    when :BANG; !truthy?(right)
     end
   end
 
@@ -118,13 +118,13 @@ class Interpreter
     lox_val.to_s
   end
 
-  def is_truthy(val)
+  def truthy?(val)
     return false if val.nil?
     return false if val.is_a?(FalseClass)
     true
   end
 
-  def is_equal(a, b)
+  def equal?(a, b)
     a.eql?(b)
   end
 

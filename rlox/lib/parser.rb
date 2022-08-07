@@ -14,7 +14,7 @@ class Parser
 
     statements = []
 
-    while !is_at_end()
+    while !at_end?()
       statements.push(declaration())
     end
 
@@ -24,7 +24,7 @@ class Parser
   private #=====================================================================
 
   def statement()
-    if match(:PRINT)
+    if match?(:PRINT)
       print_statement()
     else
       expression_statement()
@@ -39,7 +39,7 @@ class Parser
 
   def var_declaration()
     name = consume(:IDENTIFIER, "Expect variable name")
-    initializer = match(:EQUAL) ? expression() : nil
+    initializer = match?(:EQUAL) ? expression() : nil
 
     consume(:SEMICOLON, "Expect ';' after variable declaration.")
     Stmt::Var.new(name, initializer)
@@ -57,7 +57,7 @@ class Parser
 
   def declaration()
     begin
-      if match(:VAR)
+      if match?(:VAR)
         return var_declaration()
       end
       statement()
@@ -84,7 +84,7 @@ class Parser
   end
 
   def unary()
-    if match(:BANG, :MINUS)
+    if match?(:BANG, :MINUS)
       operator_token = previous()
       right_expr = unary()
       return Expr::Unary.new(operator_token, right_expr)
@@ -93,13 +93,13 @@ class Parser
   end
 
   def primary()
-    return Expr::Literal.new(false) if match(:FALSE)
-    return Expr::Literal.new(true) if match(:TRUE)
-    return Expr::Literal.new(nil) if match(:NIL)
-    return Expr::Literal.new(previous().literal) if match(:NUMBER, :STRING)
-    return Expr::Variable.new(previous()) if match(:IDENTIFIER)
+    return Expr::Literal.new(false) if match?(:FALSE)
+    return Expr::Literal.new(true) if match?(:TRUE)
+    return Expr::Literal.new(nil) if match?(:NIL)
+    return Expr::Literal.new(previous().literal) if match?(:NUMBER, :STRING)
+    return Expr::Variable.new(previous()) if match?(:IDENTIFIER)
 
-    if match(:LEFT_PAREN)
+    if match?(:LEFT_PAREN)
       expr = expression()
       consume(:RIGHT_PAREN, "Expect ')' after expression.")
       return Expr::Grouping.new(expr)
@@ -110,7 +110,7 @@ class Parser
 
   def binary_expr(left_parser, tokens, right_parser)
     expr = method(left_parser).call()
-    while match(*tokens)
+    while match?(*tokens)
       operator_token = previous()
       right_expr = method(right_parser).call()
       expr = Expr::Binary.new(expr, operator_token, right_expr)
@@ -118,8 +118,8 @@ class Parser
     expr
   end
 
-  def match(*token_types)
-    if token_types.any? { |type| check(type) }
+  def match?(*token_types)
+    if token_types.any? { |type| check?(type) }
       advance()
       true
     else
@@ -127,17 +127,17 @@ class Parser
     end
   end
 
-  def check(type)
-    return false if is_at_end()
+  def check?(type)
+    return false if at_end?()
     peek().type?(type)
   end
 
   def advance()
-    @tokens_pos += 1 if !is_at_end()
+    @tokens_pos += 1 if !at_end?()
     return previous()
   end
 
-  def is_at_end()
+  def at_end?()
     peek().type?(:EOF)
   end
 
@@ -150,7 +150,7 @@ class Parser
   end
 
   def consume(type, error_message)
-    return advance() if check(type)
+    return advance() if check?(type)
 
     raise error(peek(), error_message)
   end
@@ -162,7 +162,7 @@ class Parser
 
   def syncronize()
     advance()
-    while !is_at_end()
+    while !at_end?()
       return if previous().type?(:SEMICOLON)
 
       case peek().type
