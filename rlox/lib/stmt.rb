@@ -1,9 +1,31 @@
 require_relative "./visitable"
 
-class Stmt < Struct
+class Stmt
   include Visitable
-end
 
-Stmt.new("Expression", :expr)
-Stmt.new("Print", :expr)
-Stmt.new("Var", :name, :initializer)
+  class Expression < Stmt
+    attr_reader :expr
+
+    def initialize(expr)
+      @expr = expr
+    end
+  end
+
+  class Print < Stmt
+    attr_reader :expr
+
+    def initialize(expr)
+      @expr = expr
+    end
+  end
+
+  class Var < Stmt
+    attr_reader :name
+    attr_reader :initializer
+
+    def initialize(name, initializer)
+      @name = name
+      @initializer = initializer
+    end
+  end
+end
