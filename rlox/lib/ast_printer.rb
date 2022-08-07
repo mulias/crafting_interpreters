@@ -35,7 +35,7 @@ class AstPrinter
   end
 
   def visit_expr_variable(expr)
-    expr.name
+    expr.name.lexeme
   end
 
   private #=====================================================================
