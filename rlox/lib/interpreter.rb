@@ -31,9 +31,15 @@ class Interpreter
   end
 
   def visit_stmt_var(stmt)
-    value = stmt.initializer != nil ? evaluate(stmt.initializer) : nil
+    value = case stmt.initializer
+      when Expr
+        evaluate(stmt.initializer)
+      when nil
+        nil
+      end
+
     @environment.define(stmt.name.lexeme, value)
-    return nil
+    nil
   end
 
   def visit_stmt_expression(stmt)
@@ -112,7 +118,7 @@ class Interpreter
       if text.end_with?(".0")
         text = text[0...-2]
       end
-      return text
+      return text.to_s
     end
 
     lox_val.to_s

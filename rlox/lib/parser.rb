@@ -6,7 +6,7 @@ class Parser
   class ParseError < LoxError; end
 
   def initialize()
-    starting_state(nil)
+    starting_state([])
   end
 
   def parse(tokens)

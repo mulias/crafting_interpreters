@@ -9,7 +9,6 @@ require_relative "./interpreter"
 
 class LoxSingleton
   include Singleton
-  attr_accessor :had_error
 
   def initialize()
     @had_error = false

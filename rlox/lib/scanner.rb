@@ -2,7 +2,7 @@ require_relative "./token"
 
 class Scanner
   def initialize()
-    starting_state(nil)
+    starting_state("")
   end
 
   def scan_tokens(source)
@@ -147,7 +147,7 @@ class Scanner
   end
 
   def pred(method_name)
-    lambda(&method(method_name))
+    Proc.new { |x| self.send(method_name, x) }
   end
 
   def starting_state(source)
