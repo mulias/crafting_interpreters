@@ -55,6 +55,16 @@ class Interpreter
     evaluate(stmt.expr)
   end
 
+  def visit_stmt_if(stmt)
+    if truthy?(evaluate(stmt.condition))
+      evaluate(stmt.then_branch)
+    elsif stmt.else_branch
+      evaluate(stmt.else_branch)
+    end
+
+    nil
+  end
+
   def visit_expr_assign(expr)
     value = evaluate(expr.value)
     @environment.assign(expr.name, value)

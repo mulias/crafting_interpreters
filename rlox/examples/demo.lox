@@ -18,3 +18,15 @@ print x = 1;                 // 1
 }
 
 print x;                     // 1
+
+if (1) print "Hello World";  // Hello World
+if (false) print "No Hello World";
+
+var foo = nil;
+
+if (foo)
+  foo = 100;
+else
+  foo = 200;
+
+print foo;                  // 200

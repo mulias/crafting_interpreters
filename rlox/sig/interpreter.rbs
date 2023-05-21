@@ -11,11 +11,15 @@ class Interpreter
 
   def interpret: (Array[Stmt] statements) -> void
 
+  def visit_stmt_block: (Stmt::Block stmt) -> String
+
   def visit_stmt_print: (Stmt::Print stmt) -> void
 
   def visit_stmt_var: (Stmt::Var stmt) -> void
 
   def visit_stmt_expression: (Stmt::Expression stmt) -> lox_value
+
+  def visit_stmt_if: (Stmt::If stmt) -> void
 
   def visit_expr_assign: (Expr::Assign expr) -> lox_value
 

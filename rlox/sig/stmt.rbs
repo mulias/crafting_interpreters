@@ -13,6 +13,14 @@ class Stmt
     def initialize: (Expr expr) -> void
   end
 
+  class If < Stmt
+    attr_reader condition: Expr
+    attr_reader then_branch: Stmt
+    attr_reader else_branch: Stmt | nil
+
+    def initialize: (Expr condition, Stmt then_branch, Stmt? else_branch) -> void
+  end
+
   class Print < Stmt
     attr_reader expr: Expr
 

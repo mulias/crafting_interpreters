@@ -19,6 +19,18 @@ class Stmt
     end
   end
 
+  class If < Stmt
+    attr_reader :condition
+    attr_reader :then_branch
+    attr_reader :else_branch
+
+    def initialize(condition, then_branch, else_branch)
+      @condition = condition
+      @then_branch = then_branch
+      @else_branch = else_branch
+    end
+  end
+
   class Print < Stmt
     attr_reader :expr
 

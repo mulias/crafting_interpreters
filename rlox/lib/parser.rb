@@ -24,10 +24,22 @@ class Parser
   private #=====================================================================
 
   def statement()
+    return if_statement() if match?(:IF)
     return print_statement() if match?(:PRINT)
     return block() if match?(:LEFT_BRACE)
 
     expression_statement()
+  end
+
+  def if_statement()
+    consume(:LEFT_PAREN, "Expect '(' after 'if'.")
+    condition = expression
+    consume(:RIGHT_PAREN, "Expect ')' after if condition.")
+
+    then_branch = statement()
+    else_branch = statement() if match?(:ELSE)
+
+    Stmt::If.new(condition, then_branch, else_branch)
   end
 
   def print_statement()

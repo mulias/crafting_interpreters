@@ -21,6 +21,14 @@ class AstPrinter
     parenthesize("expr", stmt.expr)
   end
 
+  def visit_stmt_if(stmt)
+    if stmt.else_branch
+      parenthesize("if else", stmt.condition, stmt.then_branch, stmt.else_branch)
+    else
+      parenthesize("if", stmt.condition, stmt.then_branch)
+    end
+  end
+
   def visit_expr_assign(expr)
     parenthesize("assign #{expr.name.lexeme}", expr.value)
   end
