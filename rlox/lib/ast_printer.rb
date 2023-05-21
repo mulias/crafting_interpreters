@@ -5,6 +5,10 @@ class AstPrinter
     puts("--- AST PRINTER ---\n\n")
   end
 
+  def visit_stmt_block(stmt)
+    parenthesize_block(stmt.statements)
+  end
+
   def visit_stmt_print(stmt)
     parenthesize("print", stmt.expr)
   end
@@ -15,6 +19,10 @@ class AstPrinter
 
   def visit_stmt_expression(stmt)
     parenthesize("expr", stmt.expr)
+  end
+
+  def visit_expr_assign(expr)
+    parenthesize("assign #{expr.name.lexeme}", expr.value)
   end
 
   def visit_expr_binary(expr)
@@ -46,5 +54,17 @@ class AstPrinter
       .join(" ")
 
     "(#{name} #{parenthesized_exprs})"
+  end
+
+  def parenthesize_block(statements)
+    parenthesized_stmts = statements
+      .map { |stmt| indent(stmt.accept(self)) }
+      .join("\n")
+
+    "(block\n#{parenthesized_stmts}\n)"
+  end
+
+  def indent(lines)
+    lines.split("\n").map { |line| "  " + line }.join("\n")
   end
 end

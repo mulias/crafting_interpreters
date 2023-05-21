@@ -10,8 +10,9 @@ class Environment
     end
   end
 
-  def initialize()
+  def initialize(enclosing_env = nil)
     @values = Hash.new()
+    @enclosing = enclosing_env
   end
 
   def define(name, value)
@@ -21,7 +22,15 @@ class Environment
 
   def get(token)
     return @values[token.lexeme] if @values[token.lexeme]
+    return @enclosing.get(token) if @enclosing
 
-    raise EnvironmentError.new(token, "Undefined variable #{token.lexeme}")
+    raise EnvironmentError.new(token, "Undefined variable #{token.lexeme}.")
+  end
+
+  def assign(name, value)
+    return @values[name.lexeme] = value if @values[name.lexeme]
+    return @enclosing.assign(name, value) if @enclosing
+
+    raise EnvironmentError.new(token, "Undefined variable #{token.lexeme}.")
   end
 end

@@ -7,7 +7,7 @@ class Interpreter
 
   @environment: Environment
 
-  def initialize: () -> void
+  def initialize: (?Environment? environment) -> void
 
   def interpret: (Array[Stmt] statements) -> void
 
@@ -16,6 +16,8 @@ class Interpreter
   def visit_stmt_var: (Stmt::Var stmt) -> void
 
   def visit_stmt_expression: (Stmt::Expression stmt) -> lox_value
+
+  def visit_expr_assign: (Expr::Assign expr) -> lox_value
 
   def visit_expr_binary: (Expr::Binary expr) -> lox_value
 

@@ -19,6 +19,10 @@ class Parser
 
   def expression_statement: () -> Stmt::Expression
 
+  def block: () -> Stmt
+
+  def assignment: () -> Expr
+
   def expression: () -> Expr
 
   def declaration: () -> (Stmt | nil)

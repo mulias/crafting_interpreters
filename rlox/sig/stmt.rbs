@@ -1,6 +1,12 @@
 class Stmt
   include Visitable
 
+  class Block < Stmt
+    attr_reader statements: Array[Stmt]
+
+    def initialize: (Array[Stmt] statements) -> void
+  end
+
   class Expression < Stmt
     attr_reader expr: Expr
 

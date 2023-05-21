@@ -3,6 +3,16 @@ require_relative "./visitable"
 class Expr
   include Visitable
 
+  class Assign < Expr
+    attr_reader :name
+    attr_reader :value
+
+    def initialize(name, value)
+      @name = name
+      @value = value
+    end
+  end
+
   class Binary < Expr
     attr_reader :left_expr
     attr_reader :operator_token

@@ -24,11 +24,10 @@ class Parser
   private #=====================================================================
 
   def statement()
-    if match?(:PRINT)
-      print_statement()
-    else
-      expression_statement()
-    end
+    return print_statement() if match?(:PRINT)
+    return block() if match?(:LEFT_BRACE)
+
+    expression_statement()
   end
 
   def print_statement()
@@ -51,8 +50,37 @@ class Parser
     Stmt::Expression.new(expr)
   end
 
+  def block()
+    statements = []
+
+    while !check?(:RIGHT_BRACE) && !at_end?()
+      statements.push(declaration())
+    end
+
+    consume(:RIGHT_BRACE, "Expect '}' after block.")
+
+    Stmt::Block.new(statements)
+  end
+
+  def assignment()
+    expr = equality
+
+    if match?(:EQUAL)
+      equals = previous()
+      value = assignment()
+
+      if expr.instance_of?(Expr::Variable)
+        return Expr::Assign.new(expr.name, value)
+      end
+
+      error(equals, "Invalid assignment target.")
+    end
+
+    expr
+  end
+
   def expression()
-    equality()
+    assignment()
   end
 
   def declaration()

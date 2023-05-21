@@ -8,8 +8,8 @@ in
 
 mkShell {
   buildInputs = [
-    unstable.rubyPackages_3_1.ffi
-    unstable.ruby_3_1
+    unstable.rubyPackages_3_2.ffi
+    unstable.ruby_3_2
     unstable.rufo
   ];
   shellHook = ''

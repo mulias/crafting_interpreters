@@ -3,6 +3,14 @@ require_relative "./visitable"
 class Stmt
   include Visitable
 
+  class Block < Stmt
+    attr_reader :statements
+
+    def initialize(statements)
+      @statements = statements
+    end
+  end
+
   class Expression < Stmt
     attr_reader :expr
 

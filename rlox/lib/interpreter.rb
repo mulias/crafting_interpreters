@@ -11,8 +11,8 @@ class Interpreter
     end
   end
 
-  def initialize()
-    @environment = Environment.new()
+  def initialize(environment = nil)
+    @environment = environment || Environment.new()
   end
 
   def interpret(statements)
@@ -23,6 +23,15 @@ class Interpreter
     rescue Environment::EnvironmentError => e
       Lox.runtime_error(e.token, e.message)
     end
+  end
+
+  def interpret_block(statements, environment)
+    Interpreter.new(environment).interpret(statements)
+  end
+
+  def visit_stmt_block(stmt)
+    interpret_block(stmt.statements, Environment.new(@environment))
+    nil
   end
 
   def visit_stmt_print(stmt)
@@ -44,6 +53,12 @@ class Interpreter
 
   def visit_stmt_expression(stmt)
     evaluate(stmt.expr)
+  end
+
+  def visit_expr_assign(expr)
+    value = evaluate(expr.value)
+    @environment.assign(expr.name, value)
+    value
   end
 
   def visit_expr_binary(expr)

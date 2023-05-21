@@ -1,5 +1,20 @@
-print 1 + 3;
+print 1 + 3;                 // 4
 12;
-print (12 * (13 - 4) - -3);
+print (12 * (13 - 4) - -3);  // 111
 var x = 23;
-print x;
+print x;                     // 23
+x = 0;
+print x;                     // 0
+print x = 1;                 // 1
+
+{
+  var x = 12;
+  var y = 4;
+  {
+    var y = 99;
+    print y;                 // 99
+  }
+  print x - y;               // 8
+}
+
+print x;                     // 1

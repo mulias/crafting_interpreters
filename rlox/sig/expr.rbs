@@ -1,6 +1,14 @@
 class Expr
   include Visitable
 
+  class Assign < Expr
+    attr_reader name: Token
+
+    attr_reader value: Expr
+
+    def initialize: (Token name, Expr value) -> void
+  end
+
   class Binary < Expr
     attr_reader left_expr: Expr
 

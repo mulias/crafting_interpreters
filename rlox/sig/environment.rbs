@@ -6,10 +6,13 @@ class Environment
   end
 
   @values: Hash[String, lox_value]
+  @enclosing: Environment | nil
 
-  def initialize: () -> void
+  def initialize: (?Environment? enclosing) -> void
 
   def define: (String name, lox_value value) -> void
 
   def get: (Token token) -> lox_value
+
+  def assign: (Token name, lox_value value) -> void
 end
