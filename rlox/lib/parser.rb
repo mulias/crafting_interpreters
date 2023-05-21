@@ -24,12 +24,57 @@ class Parser
   private #=====================================================================
 
   def statement()
+    return for_statement() if match?(:FOR)
     return if_statement() if match?(:IF)
     return print_statement() if match?(:PRINT)
     return while_statement() if match?(:WHILE)
     return block() if match?(:LEFT_BRACE)
 
     expression_statement()
+  end
+
+  def for_statement()
+    consume(:LEFT_PAREN, "Expect '(' after 'for'.")
+
+    initializer = if match?(:SEMICOLON)
+        nil
+      elsif match?(:VAR)
+        var_declaration()
+      else
+        expression_statement()
+      end
+
+    condition = if check?(:SEMICOLON)
+        Expr::Literal.new(true)
+      else
+        expression()
+      end
+
+    consume(:SEMICOLON, "Expect ';' after loop condition.")
+
+    increment = expression() unless check?(:RIGHT_PAREN)
+
+    consume(:RIGHT_PAREN, "Expect ')' after for clauses.")
+
+    body = statement()
+
+    for_stmt = if increment
+        Stmt::While.new(
+          condition,
+          Stmt::Block.new([
+            body,
+            Stmt::Expression.new(increment),
+          ])
+        )
+      else
+        Stmt::While.new(condition, body)
+      end
+
+    if initializer
+      Stmt::Block.new([initializer, for_stmt])
+    else
+      for_stmt
+    end
   end
 
   def if_statement()
