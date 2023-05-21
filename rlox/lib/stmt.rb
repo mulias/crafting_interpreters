@@ -48,4 +48,14 @@ class Stmt
       @initializer = initializer
     end
   end
+
+  class While < Stmt
+    attr_reader :condition
+    attr_reader :body
+
+    def initialize(condition, body)
+      @condition = condition
+      @body = body
+    end
+  end
 end

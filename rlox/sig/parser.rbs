@@ -17,6 +17,8 @@ class Parser
 
   def var_declaration: () -> Stmt::Var
 
+  def while_statement: () -> Stmt::While
+
   def expression_statement: () -> Stmt::Expression
 
   def block: () -> Stmt

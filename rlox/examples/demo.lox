@@ -35,3 +35,9 @@ print "hi" or 2;            // hi
 print nil or "yes";         // yes
 print "hi" and 2;           // 2
 print nil and "yes";        // nil
+
+var count = 5;
+while (count > 0) {
+  print count;              // 5..1
+  count = count - 1;
+}

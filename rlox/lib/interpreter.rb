@@ -51,6 +51,13 @@ class Interpreter
     nil
   end
 
+  def visit_stmt_while(stmt)
+    while truthy?(evaluate(stmt.condition))
+      evaluate(stmt.body)
+    end
+    nil
+  end
+
   def visit_stmt_expression(stmt)
     evaluate(stmt.expr)
   end

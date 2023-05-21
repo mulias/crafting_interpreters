@@ -26,6 +26,7 @@ class Parser
   def statement()
     return if_statement() if match?(:IF)
     return print_statement() if match?(:PRINT)
+    return while_statement() if match?(:WHILE)
     return block() if match?(:LEFT_BRACE)
 
     expression_statement()
@@ -54,6 +55,15 @@ class Parser
 
     consume(:SEMICOLON, "Expect ';' after variable declaration.")
     Stmt::Var.new(name, initializer)
+  end
+
+  def while_statement()
+    consume(:LEFT_PAREN, "Expect '(' after 'while'.")
+    condition = expression()
+    consume(:RIGHT_PAREN, "Expect ')' after 'condition'.")
+    body = statement()
+
+    Stmt::While.new(condition, body)
   end
 
   def expression_statement()

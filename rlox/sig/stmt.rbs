@@ -34,5 +34,12 @@ class Stmt
 
     def initialize: (Token name, Expr | nil initializer) -> void
   end
+
+  class While < Stmt
+    attr_reader condition: Expr
+    attr_reader body: Stmt
+
+    def initialize: (Expr condition, Stmt body) -> void
+  end
 end
 

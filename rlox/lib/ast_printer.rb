@@ -17,6 +17,10 @@ class AstPrinter
     parenthesize("var #{stmt.name.lexeme}", stmt.initializer)
   end
 
+  def visit_stmt_while(stmt)
+    parenthesize("while", stmt.condition, stmt.body)
+  end
+
   def visit_stmt_expression(stmt)
     parenthesize("expr", stmt.expr)
   end
