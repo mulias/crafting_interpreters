@@ -21,14 +21,14 @@ class Environment
   end
 
   def get(token)
-    return @values[token.lexeme] if @values[token.lexeme]
+    return @values[token.lexeme] if @values.member?(token.lexeme)
     return @enclosing.get(token) if @enclosing
 
     raise EnvironmentError.new(token, "Undefined variable #{token.lexeme}.")
   end
 
   def assign(name, value)
-    return @values[name.lexeme] = value if @values[name.lexeme]
+    return @values[name.lexeme] = value if @values.member?(name.lexeme)
     return @enclosing.assign(name, value) if @enclosing
 
     raise EnvironmentError.new(token, "Undefined variable #{token.lexeme}.")
