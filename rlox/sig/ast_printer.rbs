@@ -19,13 +19,15 @@ class AstPrinter
 
   def visit_expr_literal: (Expr::Literal expr) -> String
 
+  def visit_expr_logical: (Expr::Logical expr) -> String
+
   def visit_expr_unary: (Expr::Unary expr) -> String
 
   def visit_expr_variable: (Expr::Variable expr) -> String
 
   private
 
-  def parenthesize: (String name, *(Expr | nil) exprs) -> String
+  def parenthesize: (String name, *(Expr | Stmt | nil) exprs) -> String
 
   def parenthesize_block: (Array[Stmt] statements) -> String
 

@@ -30,3 +30,8 @@ else
   foo = 200;
 
 print foo;                  // 200
+
+print "hi" or 2;            // hi
+print nil or "yes";         // yes
+print "hi" and 2;           // 2
+print nil and "yes";        // nil

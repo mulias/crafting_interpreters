@@ -41,6 +41,18 @@ class Expr
     end
   end
 
+  class Logical < Expr
+    attr_reader :left_expr
+    attr_reader :operator
+    attr_reader :right_expr
+
+    def initialize(left_expr, operator, right_expr)
+      @left_expr = left_expr
+      @operator = operator
+      @right_expr = right_expr
+    end
+  end
+
   class Unary < Expr
     attr_reader :operator_token
     attr_reader :right_expr

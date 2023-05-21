@@ -75,7 +75,7 @@ class Parser
   end
 
   def assignment()
-    expr = equality
+    expr = logical_or()
 
     if match?(:EQUAL)
       equals = previous()
@@ -86,6 +86,30 @@ class Parser
       end
 
       error(equals, "Invalid assignment target.")
+    end
+
+    expr
+  end
+
+  def logical_or()
+    expr = logical_and()
+
+    while match?(:OR)
+      operator = previous()
+      right = logical_and()
+      expr = Expr::Logical.new(expr, operator, right)
+    end
+
+    expr
+  end
+
+  def logical_and()
+    expr = equality()
+
+    while match?(:AND)
+      operator = previous()
+      right = equality()
+      expr = Expr::Logical.new(expr, operator, right)
     end
 
     expr

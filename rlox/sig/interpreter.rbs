@@ -11,7 +11,7 @@ class Interpreter
 
   def interpret: (Array[Stmt] statements) -> void
 
-  def visit_stmt_block: (Stmt::Block stmt) -> String
+  def visit_stmt_block: (Stmt::Block stmt) -> void
 
   def visit_stmt_print: (Stmt::Print stmt) -> void
 
@@ -28,6 +28,8 @@ class Interpreter
   def visit_expr_grouping: (Expr::Grouping expr) -> lox_value
 
   def visit_expr_literal: (Expr::Literal expr) -> lox_value
+
+  def visit_expr_logical: (Expr::Logical expr) -> lox_value
 
   def visit_expr_unary: (Expr::Unary expr) -> lox_value
 

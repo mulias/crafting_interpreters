@@ -31,6 +31,14 @@ class Expr
     def initialize: (lox_value value) -> void
   end
 
+  class Logical < Expr
+    attr_reader left_expr: Expr
+    attr_reader operator: Token
+    attr_reader right_expr: Expr
+
+    def initialize: (Expr left_expr, Token operator, Expr right_expr) -> void
+  end
+
   class Unary < Expr
     attr_reader operator_token: Token
 

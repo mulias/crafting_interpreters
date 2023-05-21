@@ -114,6 +114,18 @@ class Interpreter
     expr.value
   end
 
+  def visit_expr_logical(expr)
+    left = evaluate(expr.left_expr)
+
+    if expr.operator.type?(:OR)
+      return left if truthy?(left)
+    else
+      return left if !truthy?(left)
+    end
+
+    evaluate(expr.right_expr)
+  end
+
   def visit_expr_unary(expr)
     right = evaluate(expr.right_expr)
 

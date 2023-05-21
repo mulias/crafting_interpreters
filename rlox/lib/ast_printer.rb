@@ -46,6 +46,14 @@ class AstPrinter
     expr.value.to_s
   end
 
+  def visit_expr_logical(expr)
+    if expr.operator.type?(:OR)
+      parenthesize("or", expr.left_expr, expr.right_expr)
+    else
+      parenthesize("and", expr.left_expr, expr.right_expr)
+    end
+  end
+
   def visit_expr_unary(expr)
     parenthesize(expr.operator_token.lexeme, expr.right_expr)
   end
@@ -56,12 +64,12 @@ class AstPrinter
 
   private #=====================================================================
 
-  def parenthesize(name, *exprs)
-    parenthesized_exprs = exprs
-      .map { |expr| expr.accept(self) }
+  def parenthesize(name, *visitables)
+    parenthesized = visitables
+      .map { |visitable| visitable.accept(self) }
       .join(" ")
 
-    "(#{name} #{parenthesized_exprs})"
+    "(#{name} #{parenthesized})"
   end
 
   def parenthesize_block(statements)
