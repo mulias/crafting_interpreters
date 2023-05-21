@@ -14,7 +14,11 @@ class AstPrinter
   end
 
   def visit_stmt_var(stmt)
-    parenthesize("var #{stmt.name.lexeme}", stmt.initializer)
+    if stmt.initializer
+      parenthesize("var #{stmt.name.lexeme}", stmt.initializer)
+    else
+      parenthesize("var #{stmt.name.lexeme}")
+    end
   end
 
   def visit_stmt_while(stmt)
