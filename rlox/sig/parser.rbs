@@ -25,15 +25,15 @@ class Parser
 
   def assignment: () -> Expr
 
-  def logical_or: () -> Expr
+  def logical_or: () -> (Expr::Logical | Expr::Binary)
 
-  def logical_and: () -> Expr
+  def logical_and: () -> (Expr::Logical | Expr::Binary)
 
   def expression: () -> Expr
 
   def declaration: () -> (Stmt | nil)
 
-  def equality: () -> Expr
+  def equality: () -> Expr::Binary
 
   def comparison: () -> Expr::Binary
 

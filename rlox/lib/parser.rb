@@ -147,27 +147,27 @@ class Parser
   end
 
   def logical_or()
-    expr = logical_and()
+    left_expr = logical_and()
 
     while match?(:OR)
       operator = previous()
       right = logical_and()
-      expr = Expr::Logical.new(expr, operator, right)
+      expr = Expr::Logical.new(left_expr, operator, right)
     end
 
-    expr
+    expr || left_expr
   end
 
   def logical_and()
-    expr = equality()
+    left_expr = equality()
 
     while match?(:AND)
       operator = previous()
       right = equality()
-      expr = Expr::Logical.new(expr, operator, right)
+      expr = Expr::Logical.new(left_expr, operator, right)
     end
 
-    expr
+    expr || left_expr
   end
 
   def expression()
