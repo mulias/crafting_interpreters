@@ -19,6 +19,14 @@ class Expr
     def initialize: (Expr left_expr, Token operator_token, Expr right_expr) -> void
   end
 
+  class Call < Expr
+    attr_reader callee: Expr
+    attr_reader paren: Token
+    attr_reader arguments: Array[Expr]
+
+    def initialize: (Expr callee, Token paren, Array[Expr] argumetns) -> void
+  end
+
   class Grouping < Expr
     attr_reader expr: Expr
 

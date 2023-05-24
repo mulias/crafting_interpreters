@@ -6,6 +6,7 @@ require_relative "./token"
 require_relative "./parser"
 require_relative "./ast_printer"
 require_relative "./interpreter"
+require_relative "./globals"
 
 class LoxSingleton
   include Singleton
@@ -17,7 +18,7 @@ class LoxSingleton
     @scanner = Scanner.new()
     @parser = Parser.new()
     @ast_printer = AstPrinter.new()
-    @interpreter = Interpreter.new()
+    @interpreter = Interpreter.new(Globals.new())
   end
 
   def main(args)

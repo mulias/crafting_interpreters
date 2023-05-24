@@ -29,6 +29,11 @@ class AstPrinter
     parenthesize("expr", stmt.expr)
   end
 
+  def visit_stmt_function(stmt)
+    params_str = stmt.params.map(&:lexeme).join(" ")
+    parenthesize("fun #{stmt.name.lexeme} #{params_str}", stmt.body)
+  end
+
   def visit_stmt_if(stmt)
     if stmt.else_branch
       parenthesize("if else", stmt.condition, stmt.then_branch, stmt.else_branch)
@@ -43,6 +48,10 @@ class AstPrinter
 
   def visit_expr_binary(expr)
     parenthesize(expr.operator_token.lexeme, expr.left_expr, expr.right_expr)
+  end
+
+  def visit_expr_call(expr)
+    parenthesize("call", expr.callee, *expr.arguments)
   end
 
   def visit_expr_grouping(expr)

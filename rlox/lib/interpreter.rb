@@ -62,6 +62,11 @@ class Interpreter
     evaluate(stmt.expr)
   end
 
+  def visit_stmt_function(stmt)
+    @environment.define(stmt.name.lexeme, Function.new_fun(stmt))
+    nil
+  end
+
   def visit_stmt_if(stmt)
     if truthy?(evaluate(stmt.condition))
       evaluate(stmt.then_branch)
@@ -111,6 +116,21 @@ class Interpreter
     when :BANG_EQUAL; !equal?(left, right)
     when :EQUAL_EQUAL; equal?(left, right)
     end
+  end
+
+  def visit_expr_call(expr)
+    callee = evaluate(expr.callee)
+    arguments = expr.arguments.map { |arg| evaluate(arg) }
+
+    unless callee.is_a?(Callable)
+      raise InterpreterError.new(expr.paren, "Can only call functions and classes")
+    end
+
+    unless arguments.length == callee.arity
+      raise InterpreterError.new(expr.paren, "Expected #{callee.arity} arguments but got #{arguments.length}.")
+    end
+
+    callee.call(self, arguments)
   end
 
   def visit_expr_grouping(expr)

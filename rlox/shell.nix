@@ -16,6 +16,7 @@ mkShell {
     export NVIM_RUFO_LSP=true
 
     bundle_install () {
+      bundle install
       bundle binstubs --all
     }
 

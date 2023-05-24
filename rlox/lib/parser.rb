@@ -117,6 +117,26 @@ class Parser
     Stmt::Expression.new(expr)
   end
 
+  def function(kind)
+    name = consume(:IDENTIFIER, "Expect #{kind} name.")
+    consume(:LEFT_PAREN, "Expect '(' after #{kind} name.")
+    parameters = []
+    unless check?(:RIGHT_PAREN)
+      parameters.push(consume(:IDENTIFIER, "Expect parameter name."))
+      while match?(:COMMA)
+        if parameters.length >= 255
+          error(peek(), "Can't have more than 255 parameters.")
+        end
+        parameters.push(consume(:IDENTIFIER, "Expect parameter name."))
+      end
+    end
+    consume(:RIGHT_PAREN, "Expect ')' after parameters.")
+
+    consume(:LEFT_BRACE, "Expect '{' before #{kind} body.")
+    body = block()
+    Stmt::Function.new(name, parameters, body)
+  end
+
   def block()
     statements = []
 
@@ -176,9 +196,8 @@ class Parser
 
   def declaration()
     begin
-      if match?(:VAR)
-        return var_declaration()
-      end
+      return function("function") if match?(:FUN)
+      return var_declaration() if match?(:VAR)
       statement()
     rescue ParseError => e
       syncronize()
@@ -208,7 +227,35 @@ class Parser
       right_expr = unary()
       return Expr::Unary.new(operator_token, right_expr)
     end
-    primary()
+    call()
+  end
+
+  def call()
+    callee = primary()
+
+    while match?(:LEFT_PAREN)
+      expr = finish_call(callee)
+    end
+
+    expr || callee
+  end
+
+  def finish_call(callee)
+    arguments = []
+
+    unless check?(:RIGHT_PAREN)
+      arguments.push(expression())
+      while match?(:COMMA)
+        if arguments.length >= 255
+          error(peek(), "Can't have more than 255 arguments")
+        end
+        arguments.push(expression())
+      end
+    end
+
+    paren = consume(:RIGHT_PAREN, "Expect ')' after arguments.")
+
+    Expr::Call.new(callee, paren, arguments)
   end
 
   def primary()

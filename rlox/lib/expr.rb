@@ -25,6 +25,18 @@ class Expr
     end
   end
 
+  class Call < Expr
+    attr_reader :callee
+    attr_reader :paren
+    attr_reader :arguments
+
+    def initialize(callee, paren, arguments)
+      @callee = callee
+      @paren = paren
+      @arguments = arguments
+    end
+  end
+
   class Grouping < Expr
     attr_reader :expr
 

@@ -1,1 +1,1 @@
-type lox_value = String | Float | nil | bool
+type lox_value = String | Float | nil | bool | Callable

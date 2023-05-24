@@ -19,6 +19,18 @@ class Stmt
     end
   end
 
+  class Function < Stmt
+    attr_reader :name
+    attr_reader :params
+    attr_reader :body
+
+    def initialize(name, params, body)
+      @name = name
+      @params = params
+      @body = body
+    end
+  end
+
   class If < Stmt
     attr_reader :condition
     attr_reader :then_branch

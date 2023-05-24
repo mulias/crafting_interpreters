@@ -1,0 +1,8 @@
+class Globals < Environment
+  def initialize: () -> void
+
+  private
+
+  def set_globals: () -> void
+end
+

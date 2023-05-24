@@ -1,0 +1,21 @@
+class Callable
+end
+
+class Function < Callable
+  attr_reader arity: Integer
+
+  @fn: Proc
+
+  def self.new_built_in: (Integer arity, Proc fn_proc) -> Function
+
+  def self.new_fun: (Stmt::Function declaration) -> Function
+
+  def initialize: (Integer arity, Proc fn_proc) -> void
+
+  def call: (Interpreter interpreter, lox_value arguments) -> lox_value
+
+  private
+
+  def build_proc: (Function declaration) -> Proc
+end
+

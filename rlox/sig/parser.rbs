@@ -21,7 +21,7 @@ class Parser
 
   def expression_statement: () -> Stmt::Expression
 
-  def block: () -> Stmt
+  def block: () -> Stmt::Block
 
   def assignment: () -> Expr
 
@@ -41,7 +41,11 @@ class Parser
 
   def factor: () -> Expr::Binary
 
-  def unary: () -> (Expr::Unary | Expr::Literal | Expr::Variable | Expr::Grouping)
+  def unary: () -> (Expr::Unary | Expr::Literal | Expr::Variable | Expr::Grouping | Expr::Call)
+
+  def call: () -> (Expr::Call | Expr::Literal | Expr::Variable | Expr::Grouping)
+
+  def finish_call: (Expr callee) -> Expr::Call
 
   def primary: () -> (Expr::Literal | Expr::Variable | Expr::Grouping)
 

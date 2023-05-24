@@ -11,11 +11,15 @@ class AstPrinter
 
   def visit_stmt_expression: (Stmt::Expression stmt) -> String
 
-  def visit_stmt_if: (Stmt::If stmt) -> void
+  def visit_stmt_function: (Stmt::Function stmt) -> String
+
+  def visit_stmt_if: (Stmt::If stmt) -> String
 
   def visit_expr_assign: (Expr::Assign expr) -> String
 
   def visit_expr_binary: (Expr::Binary expr) -> String
+
+  def visit_expr_call: (Expr::Call expr) -> String
 
   def visit_expr_grouping: (Expr::Grouping expr) -> String
 
