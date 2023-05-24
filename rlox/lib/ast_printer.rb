@@ -51,6 +51,7 @@ class AstPrinter
 
   def visit_expr_literal(expr)
     return "nil" if expr.value == nil
+    return "\"#{expr.value}\"" if expr.value.instance_of?(String)
     expr.value.to_s
   end
 
