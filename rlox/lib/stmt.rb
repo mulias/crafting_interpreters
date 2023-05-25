@@ -51,6 +51,16 @@ class Stmt
     end
   end
 
+  class Return < Stmt
+    attr_reader :keyword
+    attr_reader :value
+
+    def initialize(keyword, value)
+      @keyword = keyword
+      @value = value
+    end
+  end
+
   class Var < Stmt
     attr_reader :name
     attr_reader :initializer

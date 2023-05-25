@@ -35,6 +35,13 @@ class Stmt
     def initialize: (Expr expr) -> void
   end
 
+  class Return < Stmt
+    attr_reader keyword: Token
+    attr_reader value: Expr | nil
+
+    def initialize: (Token keyword, Expr? value) -> void
+  end
+
   class Var < Stmt
     attr_reader name: Token
 

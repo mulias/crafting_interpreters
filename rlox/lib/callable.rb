@@ -8,8 +8,8 @@ class Function < Callable
     new(arity, fn_proc)
   end
 
-  def self.new_fun(declaration)
-    new(declaration.params.length, build_proc(declaration))
+  def self.new_fun(declaration, closure)
+    new(declaration.params.length, build_proc(declaration, closure))
   end
 
   def initialize(arity, fn_proc)
@@ -23,15 +23,17 @@ class Function < Callable
 
   private #=====================================================================
 
-  def self.build_proc(declaration)
+  def self.build_proc(declaration, closure)
     Proc.new do |interpreter, arguments|
-      environment = Globals.new()
+      environment = Environment.new(closure)
 
       declaration.params.zip(arguments).each do |param, argument|
         environment.define(param.lexeme, argument)
       end
 
-      interpreter.interpret_block([declaration.body], environment)
+      catch (:return) do
+        interpreter.interpret_block([declaration.body], environment)
+      end
     end
   end
 end

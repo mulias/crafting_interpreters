@@ -27,6 +27,7 @@ class Parser
     return for_statement() if match?(:FOR)
     return if_statement() if match?(:IF)
     return print_statement() if match?(:PRINT)
+    return return_statement() if match?(:RETURN)
     return while_statement() if match?(:WHILE)
     return block() if match?(:LEFT_BRACE)
 
@@ -92,6 +93,14 @@ class Parser
     expr = expression()
     consume(:SEMICOLON, "Expect ';' after value.")
     Stmt::Print.new(expr)
+  end
+
+  def return_statement()
+    keyword = previous()
+    value = expression() unless check?(:SEMICOLON)
+
+    consume(:SEMICOLON, "Expect ';' after return value.")
+    Stmt::Return.new(keyword, value)
   end
 
   def var_declaration()

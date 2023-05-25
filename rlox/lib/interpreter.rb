@@ -39,6 +39,11 @@ class Interpreter
     puts(stringify(val))
   end
 
+  def visit_stmt_return(stmt)
+    value = evaluate(stmt.value) if stmt.value
+    throw(:return, value)
+  end
+
   def visit_stmt_var(stmt)
     value = case stmt.initializer
       when Expr
@@ -63,7 +68,7 @@ class Interpreter
   end
 
   def visit_stmt_function(stmt)
-    @environment.define(stmt.name.lexeme, Function.new_fun(stmt))
+    @environment.define(stmt.name.lexeme, Function.new_fun(stmt, @environment))
     nil
   end
 

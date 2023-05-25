@@ -13,6 +13,10 @@ class AstPrinter
     parenthesize("print", stmt.expr)
   end
 
+  def visit_stmt_return(stmt)
+    parenthesize("return", stmt.value)
+  end
+
   def visit_stmt_var(stmt)
     if stmt.initializer
       parenthesize("var #{stmt.name.lexeme}", stmt.initializer)

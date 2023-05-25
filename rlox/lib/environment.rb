@@ -33,4 +33,8 @@ class Environment
 
     raise EnvironmentError.new(token, "Undefined variable #{token.lexeme}.")
   end
+
+  def to_s
+    "{env: #{@values.to_s}, enclosing: #{@enclosing || "{}"}}"
+  end
 end

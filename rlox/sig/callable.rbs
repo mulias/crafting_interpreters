@@ -8,7 +8,7 @@ class Function < Callable
 
   def self.new_built_in: (Integer arity, Proc fn_proc) -> Function
 
-  def self.new_fun: (Stmt::Function declaration) -> Function
+  def self.new_fun: (Stmt::Function declaration, Environment closure) -> Function
 
   def initialize: (Integer arity, Proc fn_proc) -> void
 
@@ -16,6 +16,6 @@ class Function < Callable
 
   private
 
-  def build_proc: (Function declaration) -> Proc
+  def build_proc: (Function declaration, Environment closure) -> Proc
 end
 

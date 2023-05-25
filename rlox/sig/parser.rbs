@@ -15,6 +15,8 @@ class Parser
 
   def print_statement: () -> Stmt::Print
 
+  def return_statement: () -> Stmt::Return
+
   def var_declaration: () -> Stmt::Var
 
   def while_statement: () -> Stmt::While
