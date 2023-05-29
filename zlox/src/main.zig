@@ -10,6 +10,10 @@ pub fn main() !void {
     var chunk = Chunk.init(allocator);
     defer chunk.deinit();
 
+    var constantIdx = try chunk.addConstant(1.2);
+    try chunk.writeOp(OpCode.Constant);
+    try chunk.write(constantIdx);
+
     try chunk.writeOp(OpCode.Return);
 
     chunk.disassemble("test chunk");
