@@ -5,14 +5,20 @@ class Environment
     def initialize: (Token token, String message) -> void
   end
 
-  @values: Hash[String, lox_value]
-  @enclosing: Environment | nil
+  attr_reader values: Hash[String, lox_value]
+  attr_reader enclosing: Environment | nil
 
   def initialize: (?Environment? enclosing) -> void
 
   def define: (String name, lox_value value) -> void
 
+  def ancestor: (Integer distance) -> (Environment | nil)
+
   def get: (Token token) -> lox_value
 
+  def get_at: (Integer distance, Token name) -> lox_value
+
   def assign: (Token name, lox_value value) -> void
+
+  def assign_at: (Integer distance, Token name, lox_value value) -> void
 end

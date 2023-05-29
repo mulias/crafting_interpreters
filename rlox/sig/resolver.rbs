@@ -1,21 +1,19 @@
-class Interpreter
-  class InterpreterError < LoxError
+class Resolver
+  class ResolverError < LoxError
     attr_reader token: Token
 
     def initialize: (Token token, String message) -> void
   end
 
-  @globals: Globals
-  @environment: Environment
-  @locals: Hash[Expr, Integer]
+  type function_type = :none | :function
 
-  def initialize: () -> void
+  @interpreter: Interpreter
+  @scopes: Array[Hash[String, bool]]
+  @current_function_type: function_type
 
-  def interpret: (Array[Stmt] statements) -> void
+  def initialize: (Interpreter interpreter) -> void
 
-  def interpret_block: (Array[Stmt] statements, Environment environment) -> void
-
-  def resolve: (Expr expr, Integer depth) -> void
+  def resolve: (Array[Stmt] statements) -> void
 
   def visit_stmt_block: (Stmt::Block stmt) -> void
 
@@ -47,19 +45,17 @@ class Interpreter
 
   private
 
-  def evaluate: (Expr | Stmt expr_or_stmt) -> lox_value
+  def visit: (Expr | Stmt expr_or_stmt) -> lox_value
 
-  def look_up_variable: (Token name, Expr expr) -> lox_value
+  def begin_scope: () -> void
 
-  def stringify: (lox_value lox_val) -> String
+  def end_scope: () -> void
 
-  def truthy?: (top val) -> bool
+  def declare: (Token name) -> void
 
-  def equal?: (top a, top b) -> bool
+  def define: (Token name) -> void
 
-  def check_number_operand: (Token operator, top operand) -> void
+  def resolve_local: (Expr expr, Token name) -> void
 
-  def check_number_operands: (Token operator, top left, top right) -> void
-
-  def check_number_or_string_operands: (Token operator, top left, top right) -> void
+  def resolve_function: (Stmt::Function, function_type type) -> void
 end

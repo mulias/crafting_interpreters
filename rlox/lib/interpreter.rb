@@ -1,5 +1,6 @@
 require_relative "./error"
 require_relative "./environment"
+require_relative "./globals"
 
 class Interpreter
   class InterpreterError < LoxError
@@ -11,8 +12,11 @@ class Interpreter
     end
   end
 
-  def initialize(environment = nil)
-    @environment = environment || Environment.new()
+  def initialize()
+    globals = Globals.new()
+    @environment = globals
+    @globals = globals
+    @locals = {}
   end
 
   def interpret(statements)
@@ -26,7 +30,16 @@ class Interpreter
   end
 
   def interpret_block(statements, environment)
-    Interpreter.new(environment).interpret(statements)
+    previous = @environment
+    @environment = environment
+    statements.each { |stmt| evaluate(stmt) }
+  ensure
+    @environment = previous
+  end
+
+  def resolve(expr, depth)
+    @locals[expr] = depth
+    nil
   end
 
   def visit_stmt_block(stmt)
@@ -84,7 +97,14 @@ class Interpreter
 
   def visit_expr_assign(expr)
     value = evaluate(expr.value)
-    @environment.assign(expr.name, value)
+
+    distance = @locals[expr]
+    if distance
+      @environment.assign_at(distance, expr.name, value)
+    else
+      @globals.assign(expr.name, value)
+    end
+
     value
   end
 
@@ -170,13 +190,22 @@ class Interpreter
   end
 
   def visit_expr_variable(expr)
-    @environment.get(expr.name)
+    look_up_variable(expr.name, expr)
   end
 
   private #=====================================================================
 
   def evaluate(expr_or_stmt)
     expr_or_stmt.accept(self)
+  end
+
+  def look_up_variable(name, expr)
+    distance = @locals[expr]
+    if distance
+      @environment.get_at(distance, name)
+    else
+      @globals.get(name)
+    end
   end
 
   def stringify(lox_val)

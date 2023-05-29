@@ -6,6 +6,7 @@ class LoxSingleton
   @parser: Parser
   @ast_printer: AstPrinter
   @interpreter: Interpreter
+  @resolver: Resolver
 
   def initialize: () -> void
 

@@ -5,8 +5,8 @@ require_relative "./scanner"
 require_relative "./token"
 require_relative "./parser"
 require_relative "./ast_printer"
+require_relative "./resolver"
 require_relative "./interpreter"
-require_relative "./globals"
 
 class LoxSingleton
   include Singleton
@@ -18,7 +18,8 @@ class LoxSingleton
     @scanner = Scanner.new()
     @parser = Parser.new()
     @ast_printer = AstPrinter.new()
-    @interpreter = Interpreter.new(Globals.new())
+    @interpreter = Interpreter.new()
+    @resolver = Resolver.new(@interpreter)
   end
 
   def main(args)
@@ -53,6 +54,10 @@ class LoxSingleton
     return if @had_error # stop if there was a syntax error
 
     @ast_printer.print(statements)
+    @resolver.resolve(statements)
+
+    return if @had_error # stop if there was a resolution error
+
     @interpreter.interpret(statements)
   end
 
