@@ -8,25 +8,29 @@ pub const OpCode = enum(u8) { Return, Constant };
 pub const Chunk = struct {
     code: ArrayList(u8),
     constants: ArrayList(Value),
+    lines: ArrayList(u32),
 
     pub fn init(allocator: Allocator) Chunk {
         return Chunk{
             .code = ArrayList(u8).init(allocator),
             .constants = ArrayList(Value).init(allocator),
+            .lines = ArrayList(u32).init(allocator),
         };
     }
 
     pub fn deinit(self: *Chunk) void {
         self.code.deinit();
         self.constants.deinit();
+        self.lines.deinit();
     }
 
-    pub fn write(self: *Chunk, byte: u8) !void {
+    pub fn write(self: *Chunk, byte: u8, line: u32) !void {
         try self.code.append(byte);
+        try self.lines.append(line);
     }
 
-    pub fn writeOp(self: *Chunk, op: OpCode) !void {
-        try self.write(@enumToInt(op));
+    pub fn writeOp(self: *Chunk, op: OpCode, line: u32) !void {
+        try self.write(@enumToInt(op), line);
     }
 
     pub fn addConstant(self: *Chunk, value: Value) !u8 {
@@ -45,7 +49,15 @@ pub const Chunk = struct {
     }
 
     pub fn disassembleInstruction(self: *Chunk, offset: usize) usize {
+        // print address
         std.debug.print("{:0>4} ", .{offset});
+
+        // print line
+        if (offset > 0 and self.lines.items[offset] == self.lines.items[offset - 1]) {
+            std.debug.print("   | ", .{});
+        } else {
+            std.debug.print("{: >4} ", .{self.lines.items[offset]});
+        }
 
         const instruction = @intToEnum(OpCode, self.code.items[offset]);
         return switch (instruction) {

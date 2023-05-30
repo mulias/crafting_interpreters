@@ -11,10 +11,10 @@ pub fn main() !void {
     defer chunk.deinit();
 
     var constantIdx = try chunk.addConstant(1.2);
-    try chunk.writeOp(OpCode.Constant);
-    try chunk.write(constantIdx);
+    try chunk.writeOp(OpCode.Constant, 123);
+    try chunk.write(constantIdx, 123);
 
-    try chunk.writeOp(OpCode.Return);
+    try chunk.writeOp(OpCode.Return, 123);
 
     chunk.disassemble("test chunk");
 
