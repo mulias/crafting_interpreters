@@ -1,6 +1,6 @@
 const std = @import("std");
-const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
 const Value = @import("./value.zig").Value;
 
 pub const OpCode = enum(u8) { Return, Constant };

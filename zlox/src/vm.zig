@@ -1,7 +1,9 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
 const Chunk = @import("./chunk.zig").Chunk;
 const OpCode = @import("./chunk.zig").OpCode;
+const Value = @import("./value.zig").Value;
 const printValue = @import("./value.zig").print;
 
 const debugTraceExecution = true;
@@ -15,40 +17,44 @@ pub const InterpretResult = enum {
 pub const VM = struct {
     chunk: *Chunk,
     ip: usize,
+    stack: ArrayList(Value),
 
-    pub fn init() VM {
+    pub fn init(allocator: Allocator) VM {
         return VM{
             .chunk = undefined,
             .ip = undefined,
+            .stack = ArrayList(Value).init(allocator),
         };
     }
 
     pub fn deinit(self: *VM) void {
-        _ = self;
+        self.stack.deinit();
     }
 
-    pub fn interpret(self: *VM, chunk: *Chunk) InterpretResult {
+    pub fn interpret(self: *VM, chunk: *Chunk) !InterpretResult {
         self.chunk = chunk;
         self.ip = 0;
         return self.run();
     }
 
-    pub fn run(self: *VM) InterpretResult {
+    pub fn run(self: *VM) !InterpretResult {
         while (true) {
             if (debugTraceExecution) {
+                self.printStack();
                 _ = self.chunk.disassembleInstruction(self.ip);
             }
 
             const instruction = @intToEnum(OpCode, self.readByte());
             switch (instruction) {
                 .Return => {
+                    printValue(self.pop());
+                    std.debug.print("\n", .{});
                     return InterpretResult.OK;
                 },
                 .Constant => {
                     const constantIdx = self.readByte();
                     const value = self.chunk.constants.items[constantIdx];
-                    printValue(value);
-                    std.debug.print("\n", .{});
+                    try self.push(value);
                 },
             }
         }
@@ -58,5 +64,21 @@ pub const VM = struct {
         const byte = self.chunk.code.items[self.ip];
         self.ip += 1;
         return byte;
+    }
+
+    fn push(self: *VM, value: Value) !void {
+        try self.stack.append(value);
+    }
+
+    fn pop(self: *VM) Value {
+        return self.stack.pop();
+    }
+
+    fn printStack(self: *VM) void {
+        std.debug.print("          ", .{});
+        for (self.stack.items) |value| {
+            std.debug.print("[ {} ]", .{value});
+        }
+        std.debug.print("\n", .{});
     }
 };

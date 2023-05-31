@@ -8,7 +8,7 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    var vm = VM.init();
+    var vm = VM.init(allocator);
     defer vm.deinit();
 
     var chunk = Chunk.init(allocator);
@@ -23,7 +23,7 @@ pub fn main() !void {
     chunk.disassemble("test chunk");
 
     std.debug.print("\n== run vm ==\n", .{});
-    _ = vm.interpret(&chunk);
+    _ = try vm.interpret(&chunk);
 
     return;
 }
