@@ -18,6 +18,20 @@ pub fn main() !void {
     try chunk.writeOp(OpCode.Constant, 123);
     try chunk.write(constantIdx, 123);
 
+    constantIdx = try chunk.addConstant(3.4);
+    try chunk.writeOp(OpCode.Constant, 123);
+    try chunk.write(constantIdx, 123);
+
+    try chunk.writeOp(OpCode.Add, 123);
+
+    constantIdx = try chunk.addConstant(5.6);
+    try chunk.writeOp(OpCode.Constant, 123);
+    try chunk.write(constantIdx, 123);
+
+    try chunk.writeOp(OpCode.Divide, 123);
+
+    try chunk.writeOp(OpCode.Negate, 123);
+
     try chunk.writeOp(OpCode.Return, 123);
 
     chunk.disassemble("test chunk");

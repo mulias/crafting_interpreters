@@ -3,7 +3,15 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Value = @import("./value.zig").Value;
 
-pub const OpCode = enum(u8) { Return, Constant };
+pub const OpCode = enum(u8) {
+    Constant,
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Negate,
+    Return,
+};
 
 pub const Chunk = struct {
     code: ArrayList(u8),
@@ -61,8 +69,13 @@ pub const Chunk = struct {
 
         const instruction = @intToEnum(OpCode, self.code.items[offset]);
         return switch (instruction) {
-            .Return => self.simpleInstruction("OP_RETURN", offset),
-            .Constant => self.constantInstruction("OP_CONSTANT", offset),
+            .Constant => self.constantInstruction("Constant", offset),
+            .Add => self.simpleInstruction("Add", offset),
+            .Subtract => self.simpleInstruction("Subtrac", offset),
+            .Multiply => self.simpleInstruction("Multiply", offset),
+            .Divide => self.simpleInstruction("Divide", offset),
+            .Negate => self.simpleInstruction("Negate", offset),
+            .Return => self.simpleInstruction("Return", offset),
         };
     }
 

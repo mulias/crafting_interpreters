@@ -46,15 +46,36 @@ pub const VM = struct {
 
             const instruction = @intToEnum(OpCode, self.readByte());
             switch (instruction) {
-                .Return => {
-                    printValue(self.pop());
-                    std.debug.print("\n", .{});
-                    return InterpretResult.OK;
-                },
                 .Constant => {
                     const constantIdx = self.readByte();
                     const value = self.chunk.constants.items[constantIdx];
                     try self.push(value);
+                },
+                .Add => {
+                    const rhs = self.pop();
+                    const lhs = self.pop();
+                    try self.push(lhs + rhs);
+                },
+                .Subtract => {
+                    const rhs = self.pop();
+                    const lhs = self.pop();
+                    try self.push(lhs - rhs);
+                },
+                .Multiply => {
+                    const rhs = self.pop();
+                    const lhs = self.pop();
+                    try self.push(lhs * rhs);
+                },
+                .Divide => {
+                    const rhs = self.pop();
+                    const lhs = self.pop();
+                    try self.push(lhs / rhs);
+                },
+                .Negate => try self.push(-self.pop()),
+                .Return => {
+                    printValue(self.pop());
+                    std.debug.print("\n", .{});
+                    return InterpretResult.OK;
                 },
             }
         }
@@ -77,7 +98,7 @@ pub const VM = struct {
     fn printStack(self: *VM) void {
         std.debug.print("          ", .{});
         for (self.stack.items) |value| {
-            std.debug.print("[ {} ]", .{value});
+            std.debug.print("[ {d} ]", .{value});
         }
         std.debug.print("\n", .{});
     }
