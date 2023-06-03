@@ -8,36 +8,42 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+
+    switch (args.len) {
+        1 => try repl(allocator),
+        2 => try runFile(allocator, args[1]),
+        else => {
+            std.debug.print("Usage: zlox [path]\n", .{});
+            std.process.exit(64);
+        },
+    }
+
+    return;
+}
+
+fn repl(allocator: Allocator) !void {
+    const stdin = std.io.getStdIn().reader();
+    var buffer: [256]u8 = undefined;
+
     var vm = VM.init(allocator);
     defer vm.deinit();
 
-    var chunk = Chunk.init(allocator);
-    defer chunk.deinit();
+    while (true) {
+        std.debug.print("> ", .{});
+        if (try stdin.readUntilDelimiterOrEof(buffer[0..], '\n')) |source| {
+            _ = try vm.interpret(source);
+        }
+    }
+}
 
-    var constantIdx = try chunk.addConstant(1.2);
-    try chunk.writeOp(OpCode.Constant, 123);
-    try chunk.write(constantIdx, 123);
+fn runFile(allocator: Allocator, path: []const u8) !void {
+    var vm = VM.init(allocator);
+    defer vm.deinit();
 
-    constantIdx = try chunk.addConstant(3.4);
-    try chunk.writeOp(OpCode.Constant, 123);
-    try chunk.write(constantIdx, 123);
+    const source = try std.fs.cwd().readFileAlloc(allocator, path, 1_000_000);
+    defer allocator.free(source);
 
-    try chunk.writeOp(OpCode.Add, 123);
-
-    constantIdx = try chunk.addConstant(5.6);
-    try chunk.writeOp(OpCode.Constant, 123);
-    try chunk.write(constantIdx, 123);
-
-    try chunk.writeOp(OpCode.Divide, 123);
-
-    try chunk.writeOp(OpCode.Negate, 123);
-
-    try chunk.writeOp(OpCode.Return, 123);
-
-    chunk.disassemble("test chunk");
-
-    std.debug.print("\n== run vm ==\n", .{});
-    _ = try vm.interpret(&chunk);
-
-    return;
+    _ = try vm.interpret(source);
 }

@@ -5,13 +5,14 @@ const Chunk = @import("./chunk.zig").Chunk;
 const OpCode = @import("./chunk.zig").OpCode;
 const Value = @import("./value.zig").Value;
 const printValue = @import("./value.zig").print;
+const compiler = @import("./compiler.zig");
 
 const debugTraceExecution = true;
 
 pub const InterpretResult = enum {
-    OK,
-    COMPILE_ERROR,
-    RUNTIME_ERROR,
+    Ok,
+    CompileError,
+    RuntimeError,
 };
 
 pub const VM = struct {
@@ -31,10 +32,10 @@ pub const VM = struct {
         self.stack.deinit();
     }
 
-    pub fn interpret(self: *VM, chunk: *Chunk) !InterpretResult {
-        self.chunk = chunk;
-        self.ip = 0;
-        return self.run();
+    pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
+        _ = self;
+        compiler.compile(source);
+        return InterpretResult.Ok;
     }
 
     pub fn run(self: *VM) !InterpretResult {
@@ -75,7 +76,7 @@ pub const VM = struct {
                 .Return => {
                     printValue(self.pop());
                     std.debug.print("\n", .{});
-                    return InterpretResult.OK;
+                    return InterpretResult.Ok;
                 },
             }
         }
