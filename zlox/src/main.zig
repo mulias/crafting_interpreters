@@ -43,7 +43,7 @@ fn runFile(allocator: Allocator, path: []const u8) !void {
     var vm = VM.init(allocator);
     defer vm.deinit();
 
-    const source = try std.fs.cwd().readFileAlloc(allocator, path, 1_000_000);
+    const source = try std.fs.cwd().readFileAlloc(allocator, path, 1e10);
     defer allocator.free(source);
 
     _ = try vm.interpret(source);
