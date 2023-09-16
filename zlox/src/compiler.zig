@@ -1,6 +1,7 @@
 const std = @import("std");
 const Scanner = @import("./scanner.zig").Scanner;
 const TokenType = @import("./scanner.zig").TokenType;
+const logger = @import("./logger.zig");
 
 pub fn compile(source: []const u8) void {
     var scanner = Scanner.init(source);
@@ -9,12 +10,12 @@ pub fn compile(source: []const u8) void {
     while (true) {
         const token = scanner.scanToken();
         if (token.line != line) {
-            std.debug.print("{: >4} ", .{token.line});
+            logger.debug("{: >4} ", .{token.line});
             line = token.line;
         } else {
-            std.debug.print("   | ", .{});
+            logger.debug("   | ", .{});
         }
-        std.debug.print("{s} '{s}'\n", .{ @tagName(token.tokenType), token.lexeme });
+        logger.debug("{s} '{s}'\n", .{ @tagName(token.tokenType), token.lexeme });
 
         if (token.tokenType == TokenType.Eof) break;
     }

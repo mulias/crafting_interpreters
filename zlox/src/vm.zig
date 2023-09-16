@@ -6,6 +6,7 @@ const OpCode = @import("./chunk.zig").OpCode;
 const Value = @import("./value.zig").Value;
 const printValue = @import("./value.zig").print;
 const compiler = @import("./compiler.zig");
+const logger = @import("./logger.zig");
 
 const debugTraceExecution = true;
 
@@ -75,7 +76,7 @@ pub const VM = struct {
                 .Negate => try self.push(-self.pop()),
                 .Return => {
                     printValue(self.pop());
-                    std.debug.print("\n", .{});
+                    logger.debug("\n", .{});
                     return InterpretResult.Ok;
                 },
             }
@@ -97,10 +98,10 @@ pub const VM = struct {
     }
 
     fn printStack(self: *VM) void {
-        std.debug.print("          ", .{});
+        logger.debug("          ", .{});
         for (self.stack.items) |value| {
-            std.debug.print("[ {d} ]", .{value});
+            logger.debug("[ {d} ]", .{value});
         }
-        std.debug.print("\n", .{});
+        logger.debug("\n", .{});
     }
 };

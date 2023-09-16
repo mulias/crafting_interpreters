@@ -2,6 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Value = @import("./value.zig").Value;
+const logger = @import("./logger.zig");
 
 pub const OpCode = enum(u8) {
     Constant,
@@ -48,7 +49,7 @@ pub const Chunk = struct {
     }
 
     pub fn disassemble(self: *Chunk, name: []const u8) void {
-        std.debug.print("== {s} ==\n", .{name});
+        logger.debug("== {s} ==\n", .{name});
 
         var offset: usize = 0;
         while (offset < self.code.items.len) {
@@ -58,13 +59,13 @@ pub const Chunk = struct {
 
     pub fn disassembleInstruction(self: *Chunk, offset: usize) usize {
         // print address
-        std.debug.print("{:0>4} ", .{offset});
+        logger.debug("{:0>4} ", .{offset});
 
         // print line
         if (offset > 0 and self.lines.items[offset] == self.lines.items[offset - 1]) {
-            std.debug.print("   | ", .{});
+            logger.debug("   | ", .{});
         } else {
-            std.debug.print("{: >4} ", .{self.lines.items[offset]});
+            logger.debug("{: >4} ", .{self.lines.items[offset]});
         }
 
         const instruction = @as(OpCode, @enumFromInt(self.code.items[offset]));
@@ -81,14 +82,14 @@ pub const Chunk = struct {
 
     pub fn simpleInstruction(self: *Chunk, name: []const u8, offset: usize) usize {
         _ = self;
-        std.debug.print("{s}\n", .{name});
+        logger.debug("{s}\n", .{name});
         return offset + 1;
     }
 
     pub fn constantInstruction(self: *Chunk, name: []const u8, offset: usize) usize {
         var constantIdx = self.code.items[offset + 1];
         var constantValue = self.constants.items[constantIdx];
-        std.debug.print("{s} {} '{d}'\n", .{ name, constantIdx, constantValue });
+        logger.debug("{s} {} '{d}'\n", .{ name, constantIdx, constantValue });
         return offset + 2;
     }
 };

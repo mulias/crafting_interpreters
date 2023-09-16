@@ -3,6 +3,7 @@ const OpCode = @import("./chunk.zig").OpCode;
 const Chunk = @import("./chunk.zig").Chunk;
 const VM = @import("./vm.zig").VM;
 const Allocator = std.mem.Allocator;
+const logger = @import("./logger.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -15,7 +16,7 @@ pub fn main() !void {
         1 => try repl(allocator),
         2 => try runFile(allocator, args[1]),
         else => {
-            std.debug.print("Usage: zlox [path]\n", .{});
+            try logger.info("Usage: zlox [path]\n", .{});
             std.process.exit(64);
         },
     }
@@ -31,8 +32,8 @@ fn repl(allocator: Allocator) !void {
     defer vm.deinit();
 
     while (true) {
-        std.debug.print("> ", .{});
-        if (try stdin.readUntilDelimiterOrEof(buffer[0..], '\n')) |source| {
+        try logger.info("> ", .{});
+        if (try stdin.readUntilDelimiterOrEof(&buffer, '\n')) |source| {
             _ = try vm.interpret(source);
         }
     }
