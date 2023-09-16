@@ -38,11 +38,11 @@ pub const Chunk = struct {
     }
 
     pub fn writeOp(self: *Chunk, op: OpCode, line: u32) !void {
-        try self.write(@enumToInt(op), line);
+        try self.write(@intFromEnum(op), line);
     }
 
     pub fn addConstant(self: *Chunk, value: Value) !u8 {
-        const idx = @intCast(u8, self.constants.items.len);
+        const idx = @as(u8, @intCast(self.constants.items.len));
         try self.constants.append(value);
         return idx;
     }
@@ -67,7 +67,7 @@ pub const Chunk = struct {
             std.debug.print("{: >4} ", .{self.lines.items[offset]});
         }
 
-        const instruction = @intToEnum(OpCode, self.code.items[offset]);
+        const instruction = @as(OpCode, @enumFromInt(self.code.items[offset]));
         return switch (instruction) {
             .Constant => self.constantInstruction("Constant", offset),
             .Add => self.simpleInstruction("Add", offset),

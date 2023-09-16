@@ -8,7 +8,7 @@ in
 
 mkShell {
   buildInputs = [
-    unstable.zig
+    unstable.zig_0_11
     unstable.zls
   ];
   shellHook = ''

@@ -45,7 +45,7 @@ pub const VM = struct {
                 _ = self.chunk.disassembleInstruction(self.ip);
             }
 
-            const instruction = @intToEnum(OpCode, self.readByte());
+            const instruction = @as(OpCode, @enumFromInt(self.readByte()));
             switch (instruction) {
                 .Constant => {
                     const constantIdx = self.readByte();
