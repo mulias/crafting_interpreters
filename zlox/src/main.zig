@@ -48,3 +48,7 @@ fn runFile(allocator: Allocator, path: []const u8) !void {
 
     _ = try vm.interpret(source);
 }
+
+test {
+    @import("std").testing.refAllDecls(@This());
+}

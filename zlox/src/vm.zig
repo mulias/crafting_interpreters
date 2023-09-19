@@ -114,3 +114,12 @@ pub const VM = struct {
         logger.debug("\n", .{});
     }
 };
+
+test "vm" {
+    var alloc = std.testing.allocator;
+    var vm = VM.init(alloc);
+    defer vm.deinit();
+
+    try std.testing.expect(try vm.interpret("1 + 1") == .Ok);
+    try std.testing.expect(try vm.interpret("1 + ") == .CompileError);
+}
