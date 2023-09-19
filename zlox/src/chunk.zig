@@ -42,8 +42,8 @@ pub const Chunk = struct {
         try self.write(@intFromEnum(op), line);
     }
 
-    pub fn addConstant(self: *Chunk, value: Value) !u8 {
-        const idx = @as(u8, @intCast(self.constants.items.len));
+    pub fn addConstant(self: *Chunk, value: Value) !u9 {
+        const idx = @as(u9, @intCast(self.constants.items.len));
         try self.constants.append(value);
         return idx;
     }
