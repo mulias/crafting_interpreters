@@ -17,12 +17,14 @@ pub const InterpretResult = enum {
 };
 
 pub const VM = struct {
+    allocator: Allocator,
     chunk: *Chunk,
     ip: usize,
     stack: ArrayList(Value),
 
     pub fn init(allocator: Allocator) VM {
         return VM{
+            .allocator = allocator,
             .chunk = undefined,
             .ip = undefined,
             .stack = ArrayList(Value).init(allocator),
@@ -34,9 +36,16 @@ pub const VM = struct {
     }
 
     pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
-        _ = self;
-        compiler.compile(source);
-        return InterpretResult.Ok;
+        var chunk = Chunk.init(self.allocator);
+        defer chunk.deinit();
+
+        const success = try compiler.compile(source, &chunk);
+        if (!success) return InterpretResult.CompileError;
+
+        self.chunk = &chunk;
+        self.ip = 0;
+
+        return try self.run();
     }
 
     pub fn run(self: *VM) !InterpretResult {

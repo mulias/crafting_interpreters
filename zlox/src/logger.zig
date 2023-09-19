@@ -1,11 +1,13 @@
 const std = @import("std");
 
-pub fn info(comptime format: []const u8, args: anytype) !void {
-    const out = std.io.getStdOut();
-    var w = out.writer();
-    try w.print(format, args);
+pub fn info(comptime fmt: []const u8, args: anytype) void {
+    std.io.getStdOut().writer().print(fmt, args) catch return;
 }
 
-pub fn debug(comptime format: []const u8, args: anytype) void {
-    std.debug.print(format, args);
+pub fn warn(comptime fmt: []const u8, args: anytype) void {
+    std.io.getStdErr().writer().print(fmt, args) catch return;
+}
+
+pub fn debug(comptime fmt: []const u8, args: anytype) void {
+    std.io.getStdErr().writer().print(fmt, args) catch return;
 }

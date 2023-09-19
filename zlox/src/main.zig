@@ -16,7 +16,7 @@ pub fn main() !void {
         1 => try repl(allocator),
         2 => try runFile(allocator, args[1]),
         else => {
-            try logger.info("Usage: zlox [path]\n", .{});
+            logger.info("Usage: zlox [path]\n", .{});
             std.process.exit(64);
         },
     }
@@ -32,7 +32,7 @@ fn repl(allocator: Allocator) !void {
     defer vm.deinit();
 
     while (true) {
-        try logger.info("> ", .{});
+        logger.info("> ", .{});
         if (try stdin.readUntilDelimiterOrEof(&buffer, '\n')) |source| {
             _ = try vm.interpret(source);
         }

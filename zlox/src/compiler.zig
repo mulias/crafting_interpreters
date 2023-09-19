@@ -1,22 +1,19 @@
 const std = @import("std");
 const Scanner = @import("./scanner.zig").Scanner;
-const TokenType = @import("./scanner.zig").TokenType;
+const Parser = @import("./parser.zig").Parser;
+const Token = @import("./token.zig").Token;
+const TokenType = @import("./token.zig").TokenType;
 const logger = @import("./logger.zig");
+const Chunk = @import("./chunk.zig").Chunk;
 
-pub fn compile(source: []const u8) void {
+pub fn compile(source: []const u8, chunk: *Chunk) !bool {
     var scanner = Scanner.init(source);
+    var parser = Parser.init(&scanner, chunk);
 
-    var line: u32 = 0;
-    while (true) {
-        const token = scanner.scanToken();
-        if (token.line != line) {
-            logger.debug("{: >4} ", .{token.line});
-            line = token.line;
-        } else {
-            logger.debug("   | ", .{});
-        }
-        logger.debug("{s} '{s}'\n", .{ @tagName(token.tokenType), token.lexeme });
+    parser.advance();
+    try parser.expression();
+    parser.consume(TokenType.Eof, "Expect end of expression.");
+    try parser.end();
 
-        if (token.tokenType == TokenType.Eof) break;
-    }
+    return !parser.hadError;
 }
