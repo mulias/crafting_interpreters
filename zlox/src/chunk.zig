@@ -89,7 +89,9 @@ pub const Chunk = struct {
     pub fn constantInstruction(self: *Chunk, name: []const u8, offset: usize) usize {
         var constantIdx = self.code.items[offset + 1];
         var constantValue = self.constants.items[constantIdx];
-        logger.debug("{s} {} '{d}'\n", .{ name, constantIdx, constantValue });
+        logger.debug("{s} {} '", .{ name, constantIdx });
+        constantValue.print();
+        logger.debug("'\n", .{});
         return offset + 2;
     }
 };

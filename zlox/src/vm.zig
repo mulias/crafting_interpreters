@@ -63,28 +63,55 @@ pub const VM = struct {
                     try self.push(value);
                 },
                 .Add => {
-                    const rhs = self.pop();
-                    const lhs = self.pop();
-                    try self.push(lhs + rhs);
+                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
+                        const rhs = self.pop().asNumber();
+                        const lhs = self.pop().asNumber();
+
+                        try self.push(.{ .Number = lhs.? + rhs.? });
+                    } else {
+                        return self.runtimeError("Operands must be numbers.");
+                    }
                 },
                 .Subtract => {
-                    const rhs = self.pop();
-                    const lhs = self.pop();
-                    try self.push(lhs - rhs);
+                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
+                        const rhs = self.pop().asNumber();
+                        const lhs = self.pop().asNumber();
+
+                        try self.push(.{ .Number = lhs.? - rhs.? });
+                    } else {
+                        return self.runtimeError("Operands must be numbers.");
+                    }
                 },
                 .Multiply => {
-                    const rhs = self.pop();
-                    const lhs = self.pop();
-                    try self.push(lhs * rhs);
+                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
+                        const rhs = self.pop().asNumber();
+                        const lhs = self.pop().asNumber();
+
+                        try self.push(.{ .Number = lhs.? * rhs.? });
+                    } else {
+                        return self.runtimeError("Operands must be numbers.");
+                    }
                 },
                 .Divide => {
-                    const rhs = self.pop();
-                    const lhs = self.pop();
-                    try self.push(lhs / rhs);
+                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
+                        const rhs = self.pop().asNumber();
+                        const lhs = self.pop().asNumber();
+
+                        try self.push(.{ .Number = lhs.? / rhs.? });
+                    } else {
+                        return self.runtimeError("Operands must be numbers.");
+                    }
                 },
-                .Negate => try self.push(-self.pop()),
+                .Negate => {
+                    if (self.peek(0).isNumber()) {
+                        const n = self.pop().asNumber();
+                        try self.push(.{ .Number = -(n.?) });
+                    } else {
+                        return self.runtimeError("Operand must be a number.");
+                    }
+                },
                 .Return => {
-                    printValue(self.pop());
+                    self.pop().print();
                     logger.debug("\n", .{});
                     return InterpretResult.Ok;
                 },
@@ -106,12 +133,31 @@ pub const VM = struct {
         return self.stack.pop();
     }
 
+    fn peek(self: *VM, distance: usize) Value {
+        var len = self.stack.items.len;
+        return self.stack.items[len - 1 - distance];
+    }
+
+    fn resetStack(self: *VM) void {
+        self.stack.shrinkAndFree(0);
+    }
+
     fn printStack(self: *VM) void {
         logger.debug("          ", .{});
         for (self.stack.items) |value| {
-            logger.debug("[ {d} ]", .{value});
+            logger.debug("[ ", .{});
+            value.print();
+            logger.debug(" ]", .{});
         }
         logger.debug("\n", .{});
+    }
+
+    fn runtimeError(self: *VM, message: []const u8) InterpretResult {
+        const line = self.chunk.lines.items[self.ip];
+        logger.warn("{s}", .{message});
+        logger.warn("\n[line {d}] in script\n", .{line});
+        self.resetStack();
+        return InterpretResult.RuntimeError;
     }
 };
 
