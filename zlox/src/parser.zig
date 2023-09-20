@@ -100,6 +100,15 @@ pub const Parser = struct {
         try self.emitConstant(.{ .Number = value });
     }
 
+    fn literal(self: *Parser) !void {
+        switch (self.previous.tokenType) {
+            .True => try self.emitOp(.True),
+            .False => try self.emitOp(.False),
+            .Nil => try self.emitOp(.Nil),
+            else => self.errorAtPrevious("Unexpected literal"),
+        }
+    }
+
     fn grouping(self: *Parser) !void {
         try self.expression();
         self.consume(.RightParen, "Expect ')' after expression.");
@@ -186,8 +195,9 @@ pub const Parser = struct {
             .Number => return self.number(),
 
             // Keywords.
-            .And, .Class, .Else, .False, .For, .Fun, .If, .Nil, .Or => {},
-            .Print, .Return, .Super, .This, .True, .Var, .While, .Error => {},
+            .True, .False, .Nil => return self.literal(),
+            .And, .Class, .Else, .For, .Fun, .If, .Or => {},
+            .Print, .Return, .Super, .This, .Var, .While, .Error => {},
             .Eof => {},
         }
 

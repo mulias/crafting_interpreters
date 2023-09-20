@@ -62,6 +62,9 @@ pub const VM = struct {
                     const value = self.chunk.constants.items[constantIdx];
                     try self.push(value);
                 },
+                .True => try self.push(.{ .Bool = true }),
+                .False => try self.push(.{ .Bool = false }),
+                .Nil => try self.push(.{ .Nil = undefined }),
                 .Add => {
                     if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
                         const rhs = self.pop().asNumber();

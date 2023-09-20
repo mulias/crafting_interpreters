@@ -6,6 +6,9 @@ const logger = @import("./logger.zig");
 
 pub const OpCode = enum(u8) {
     Constant,
+    Nil,
+    True,
+    False,
     Add,
     Subtract,
     Multiply,
@@ -71,6 +74,9 @@ pub const Chunk = struct {
         const instruction = @as(OpCode, @enumFromInt(self.code.items[offset]));
         return switch (instruction) {
             .Constant => self.constantInstruction("Constant", offset),
+            .True => self.simpleInstruction("True", offset),
+            .False => self.simpleInstruction("False", offset),
+            .Nil => self.simpleInstruction("Nil", offset),
             .Add => self.simpleInstruction("Add", offset),
             .Subtract => self.simpleInstruction("Subtrac", offset),
             .Multiply => self.simpleInstruction("Multiply", offset),
