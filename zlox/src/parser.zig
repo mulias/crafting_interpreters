@@ -137,6 +137,17 @@ pub const Parser = struct {
             .Minus => try self.emitOp(.Subtract),
             .Star => try self.emitOp(.Multiply),
             .Slash => try self.emitOp(.Divide),
+            .EqualEqual => try self.emitOp(.Equal),
+            .Greater => try self.emitOp(.Greater),
+            .GreaterEqual => {
+                try self.emitOp(.Less);
+                try self.emitOp(.Not);
+            },
+            .Less => try self.emitOp(.Less),
+            .LessEqual => {
+                try self.emitOp(.Greater);
+                try self.emitOp(.Not);
+            },
             else => self.errorAtPrevious("Unexpected binary operator"),
         }
     }
@@ -153,25 +164,56 @@ pub const Parser = struct {
 
     fn tokenPrecedence(tokenType: TokenType) Precedence {
         return switch (tokenType) {
-            // Single-character tokens.
-            .LeftParen => .Call,
-            .RightParen, .LeftBrace, .RightBrace, .Comma => .None,
-            .Dot => .Call,
-            .Minus, .Plus => .Term,
-            .Semicolon => .None,
-            .Slash, .Star => .Factor,
+            .RightParen,
+            .LeftBrace,
+            .RightBrace,
+            .Comma,
+            .Bang,
+            .BangEqual,
+            .Equal,
+            .Semicolon,
+            .Identifier,
+            .String,
+            .Number,
+            .And,
+            .Class,
+            .Else,
+            .False,
+            .For,
+            .Fun,
+            .If,
+            .Nil,
+            .Or,
+            .Print,
+            .Return,
+            .Super,
+            .This,
+            .True,
+            .Var,
+            .While,
+            .Error,
+            .Eof,
+            => .None,
 
-            // One or two character tokens.
-            .Bang, .BangEqual, .Equal, .EqualEqual, .Greater => .None,
-            .GreaterEqual, .Less, .LessEqual => .None,
+            .EqualEqual => .Equality,
 
-            // Literals.
-            .Identifier, .String, .Number => .None,
+            .Greater,
+            .GreaterEqual,
+            .Less,
+            .LessEqual,
+            => .Comparison,
 
-            // Keywords.
-            .And, .Class, .Else, .False, .For, .Fun, .If, .Nil, .Or => .None,
-            .Print, .Return, .Super, .This, .True, .Var, .While, .Error => .None,
-            .Eof => .None,
+            .LeftParen,
+            .Dot,
+            => .Call,
+
+            .Minus,
+            .Plus,
+            => .Term,
+
+            .Slash,
+            .Star,
+            => .Factor,
         };
     }
 
@@ -207,16 +249,25 @@ pub const Parser = struct {
 
     pub fn parseAsInfix(self: *Parser, tokenType: TokenType) !void {
         switch (tokenType) {
-            // Single-character tokens.
+            .Minus,
+            .Plus,
+            .Slash,
+            .Star,
+            .EqualEqual,
+            .Greater,
+            .GreaterEqual,
+            .Less,
+            .LessEqual,
+            => return self.binary(),
+
             .LeftParen, .RightParen, .LeftBrace, .RightBrace, .Comma => {},
             .Dot => {},
-            .Minus, .Plus => return self.binary(),
             .Semicolon => {},
-            .Slash, .Star => return self.binary(),
 
-            // One or two character tokens.
-            .Bang, .BangEqual, .Equal, .EqualEqual, .Greater => {},
-            .GreaterEqual, .Less, .LessEqual => {},
+            .Bang,
+            .Equal,
+            .BangEqual,
+            => {},
 
             // Literals.
             .Identifier, .String, .Number => {},

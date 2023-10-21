@@ -64,6 +64,31 @@ pub const VM = struct {
                 },
                 .True => try self.push(.{ .Bool = true }),
                 .False => try self.push(.{ .Bool = false }),
+                .Equal => {
+                    const b = self.pop();
+                    const a = self.pop();
+                    try self.push(.{ .Bool = valuesEqual(a, b) });
+                },
+                .Greater => {
+                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
+                        const rhs = self.pop().asNumber();
+                        const lhs = self.pop().asNumber();
+
+                        try self.push(.{ .Bool = lhs.? > rhs.? });
+                    } else {
+                        return self.runtimeError("Operands must be numbers.");
+                    }
+                },
+                .Less => {
+                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
+                        const rhs = self.pop().asNumber();
+                        const lhs = self.pop().asNumber();
+
+                        try self.push(.{ .Bool = lhs.? < rhs.? });
+                    } else {
+                        return self.runtimeError("Operands must be numbers.");
+                    }
+                },
                 .Nil => try self.push(.{ .Nil = undefined }),
                 .Add => {
                     if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
@@ -128,6 +153,23 @@ pub const VM = struct {
             .Bool => |b| !b,
             .Nil => true,
             else => false,
+        };
+    }
+
+    fn valuesEqual(a: Value, b: Value) bool {
+        return switch (a) {
+            .Bool => |boolA| switch (b) {
+                .Bool => |boolB| boolA == boolB,
+                else => false,
+            },
+            .Number => |nA| switch (b) {
+                .Number => |nB| nA == nB,
+                else => false,
+            },
+            .Nil => switch (b) {
+                .Nil => true,
+                else => false,
+            },
         };
     }
 
