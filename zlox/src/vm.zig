@@ -105,6 +105,7 @@ pub const VM = struct {
                         return self.runtimeError("Operands must be numbers.");
                     }
                 },
+                .Not => try self.push(.{ .Bool = isFalsey(self.pop()) }),
                 .Negate => {
                     if (self.peek(0).isNumber()) {
                         const n = self.pop().asNumber();
@@ -120,6 +121,14 @@ pub const VM = struct {
                 },
             }
         }
+    }
+
+    fn isFalsey(value: Value) bool {
+        return switch (value) {
+            .Bool => |b| !b,
+            .Nil => true,
+            else => false,
+        };
     }
 
     fn readByte(self: *VM) u8 {

@@ -123,6 +123,7 @@ pub const Parser = struct {
         // Emit the operator instruction.
         switch (operatorType) {
             .Minus => try self.emitOp(.Negate),
+            .Bang => try self.emitOp(.Not),
             else => self.errorAtPrevious("Unexpected unary operator"),
         }
     }
@@ -183,11 +184,11 @@ pub const Parser = struct {
             // Single-character tokens.
             .LeftParen => return self.grouping(),
             .RightParen, .LeftBrace, .RightBrace, .Comma, .Dot => {},
-            .Minus => return self.unary(),
+            .Minus, .Bang => return self.unary(),
             .Plus, .Semicolon, .Slash, .Star => {},
 
             // One or two character tokens.
-            .Bang, .BangEqual, .Equal, .EqualEqual, .Greater => {},
+            .BangEqual, .Equal, .EqualEqual, .Greater => {},
             .GreaterEqual, .Less, .LessEqual => {},
 
             // Literals.
