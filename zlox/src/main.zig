@@ -35,6 +35,7 @@ fn repl(allocator: Allocator) !void {
         logger.info("> ", .{});
         if (try stdin.readUntilDelimiterOrEof(&buffer, '\n')) |source| {
             _ = try vm.interpret(source);
+            logger.info("\n", .{});
         }
     }
 }

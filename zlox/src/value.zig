@@ -24,17 +24,34 @@ pub const Value = union(ValueType) {
         }
     }
 
-    pub fn asNumber(self: Value) ?f64 {
+    pub fn isNumber(self: Value) bool {
         switch (self) {
-            .Bool, .Nil => return null,
-            .Number => |n| return n,
+            .Number => return true,
+            else => return false,
         }
     }
 
-    pub fn isNumber(self: Value) bool {
+    pub fn asNumber(self: Value) f64 {
+        std.debug.assert(self.isNumber());
+        return self.Number;
+    }
+
+    pub fn isBool(self: Value) bool {
         switch (self) {
-            .Bool, .Nil => return false,
-            .Number => return true,
+            .Bool => return true,
+            else => return false,
+        }
+    }
+
+    pub fn asBool(self: Value) bool {
+        std.debug.assert(self.isBool());
+        return self.Bool;
+    }
+
+    pub fn isNil(self: Value) bool {
+        switch (self) {
+            .Nil => return true,
+            else => return false,
         }
     }
 };

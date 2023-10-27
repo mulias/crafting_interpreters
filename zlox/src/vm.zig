@@ -55,97 +55,66 @@ pub const VM = struct {
                 _ = self.chunk.disassembleInstruction(self.ip);
             }
 
-            const instruction = @as(OpCode, @enumFromInt(self.readByte()));
-            switch (instruction) {
-                .Constant => {
-                    const constantIdx = self.readByte();
-                    const value = self.chunk.constants.items[constantIdx];
-                    try self.push(value);
-                },
-                .True => try self.push(.{ .Bool = true }),
-                .False => try self.push(.{ .Bool = false }),
-                .Equal => {
-                    const b = self.pop();
-                    const a = self.pop();
-                    try self.push(.{ .Bool = valuesEqual(a, b) });
-                },
-                .Greater => {
-                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
-                        const rhs = self.pop().asNumber();
-                        const lhs = self.pop().asNumber();
-
-                        try self.push(.{ .Bool = lhs.? > rhs.? });
-                    } else {
-                        return self.runtimeError("Operands must be numbers.");
-                    }
-                },
-                .Less => {
-                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
-                        const rhs = self.pop().asNumber();
-                        const lhs = self.pop().asNumber();
-
-                        try self.push(.{ .Bool = lhs.? < rhs.? });
-                    } else {
-                        return self.runtimeError("Operands must be numbers.");
-                    }
-                },
-                .Nil => try self.push(.{ .Nil = undefined }),
-                .Add => {
-                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
-                        const rhs = self.pop().asNumber();
-                        const lhs = self.pop().asNumber();
-
-                        try self.push(.{ .Number = lhs.? + rhs.? });
-                    } else {
-                        return self.runtimeError("Operands must be numbers.");
-                    }
-                },
-                .Subtract => {
-                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
-                        const rhs = self.pop().asNumber();
-                        const lhs = self.pop().asNumber();
-
-                        try self.push(.{ .Number = lhs.? - rhs.? });
-                    } else {
-                        return self.runtimeError("Operands must be numbers.");
-                    }
-                },
-                .Multiply => {
-                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
-                        const rhs = self.pop().asNumber();
-                        const lhs = self.pop().asNumber();
-
-                        try self.push(.{ .Number = lhs.? * rhs.? });
-                    } else {
-                        return self.runtimeError("Operands must be numbers.");
-                    }
-                },
-                .Divide => {
-                    if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
-                        const rhs = self.pop().asNumber();
-                        const lhs = self.pop().asNumber();
-
-                        try self.push(.{ .Number = lhs.? / rhs.? });
-                    } else {
-                        return self.runtimeError("Operands must be numbers.");
-                    }
-                },
-                .Not => try self.push(.{ .Bool = isFalsey(self.pop()) }),
-                .Negate => {
-                    if (self.peek(0).isNumber()) {
-                        const n = self.pop().asNumber();
-                        try self.push(.{ .Number = -(n.?) });
-                    } else {
-                        return self.runtimeError("Operand must be a number.");
-                    }
-                },
-                .Return => {
-                    self.pop().print();
-                    logger.debug("\n", .{});
-                    return InterpretResult.Ok;
-                },
-            }
+            if (try self.nextInstruction()) |result| return result;
         }
+    }
+
+    fn nextInstruction(self: *VM) !?InterpretResult {
+        const instruction = @as(OpCode, @enumFromInt(self.readByte()));
+        switch (instruction) {
+            .Constant => {
+                const constantIdx = self.readByte();
+                const value = self.chunk.constants.items[constantIdx];
+                try self.push(value);
+            },
+            .True => try self.push(.{ .Bool = true }),
+            .False => try self.push(.{ .Bool = false }),
+            .Equal => {
+                const b = self.pop();
+                const a = self.pop();
+                try self.push(.{ .Bool = valuesEqual(a, b) });
+            },
+            .Greater => {
+                if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
+                    const rhs = self.pop().asNumber();
+                    const lhs = self.pop().asNumber();
+
+                    try self.push(.{ .Bool = lhs > rhs });
+                } else {
+                    return self.runtimeError("Operands must be numbers.");
+                }
+            },
+            .Less => {
+                if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
+                    const rhs = self.pop().asNumber();
+                    const lhs = self.pop().asNumber();
+
+                    try self.push(.{ .Bool = lhs < rhs });
+                } else {
+                    return self.runtimeError("Operands must be numbers.");
+                }
+            },
+            .Nil => try self.push(.{ .Nil = undefined }),
+            .Add => return try self.binaryNumericOp(add),
+            .Subtract => return try self.binaryNumericOp(sub),
+            .Multiply => return try self.binaryNumericOp(mul),
+            .Divide => return try self.binaryNumericOp(div),
+            .Not => try self.push(.{ .Bool = isFalsey(self.pop()) }),
+            .Negate => {
+                if (self.peek(0).isNumber()) {
+                    const n = self.pop().asNumber();
+                    try self.push(.{ .Number = -n });
+                } else {
+                    return self.runtimeError("Operand must be a number.");
+                }
+            },
+            .Return => {
+                self.pop().print();
+                return InterpretResult.Ok;
+            },
+        }
+
+        return null;
     }
 
     fn isFalsey(value: Value) bool {
@@ -157,20 +126,44 @@ pub const VM = struct {
     }
 
     fn valuesEqual(a: Value, b: Value) bool {
-        return switch (a) {
-            .Bool => |boolA| switch (b) {
-                .Bool => |boolB| boolA == boolB,
-                else => false,
-            },
-            .Number => |nA| switch (b) {
-                .Number => |nB| nA == nB,
-                else => false,
-            },
-            .Nil => switch (b) {
-                .Nil => true,
-                else => false,
-            },
-        };
+        if (a.isBool() and b.isBool()) {
+            return a.asBool() == b.asBool();
+        } else if (a.isNumber() and b.isNumber()) {
+            return a.asNumber() == b.asNumber();
+        } else if (a.isNil() and b.isNil()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    fn add(x: f64, y: f64) f64 {
+        return x + y;
+    }
+
+    fn sub(x: f64, y: f64) f64 {
+        return x - y;
+    }
+
+    fn mul(x: f64, y: f64) f64 {
+        return x * y;
+    }
+
+    fn div(x: f64, y: f64) f64 {
+        return x / y;
+    }
+
+    fn binaryNumericOp(self: *VM, comptime op: anytype) !?InterpretResult {
+        const rhs = self.pop();
+        const lhs = self.pop();
+
+        if (lhs.isNumber() and rhs.isNumber()) {
+            try self.push(.{ .Number = op(lhs.asNumber(), rhs.asNumber()) });
+        } else {
+            return self.runtimeError("Operands must be numbers.");
+        }
+
+        return null;
     }
 
     fn readByte(self: *VM) u8 {
