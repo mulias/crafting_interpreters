@@ -12,11 +12,27 @@ app "Plover"
         cli.File,
         Token,
         Scanner,
+        Ast,
     ]
     provides [main] to cli
 
 main : Task {} I32
 main =
+    Binary {
+        left: Unary {
+            operator: { kind: Minus, lexeme: "-", line: 1 },
+            expr: Literal { value: Number 123 },
+        },
+        operator: { kind: Star, lexeme: "*", line: 1 },
+        right: Grouping {
+            expr: Literal { value: Number 45.67 },
+        },
+    }
+    |> Ast.toExprStr
+    |> Stdout.line
+
+oldMain : Task {} I32
+oldMain =
     args <- Arg.list |> Task.await
 
     when args is
