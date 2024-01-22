@@ -13,38 +13,38 @@ app "Plover"
         Token,
         Scanner,
         Ast,
+        Parser,
     ]
     provides [main] to cli
 
 main : Task {} I32
 main =
-    Binary {
-        left: Unary {
-            operator: { kind: Minus, lexeme: "-", line: 1 },
-            expr: Literal { value: Number 123 },
-        },
-        operator: { kind: Star, lexeme: "*", line: 1 },
-        right: Grouping {
-            expr: Literal { value: Number 45.67 },
-        },
-    }
-    |> Ast.toExprStr
-    |> Stdout.line
+    parsed =
+        "-123 * 45.67"
+        |> Scanner.scan
+        |> Parser.parseExpression
 
-oldMain : Task {} I32
-oldMain =
-    args <- Arg.list |> Task.await
+    when parsed is
+        Ok expr ->
+            expr |> Ast.toExprStr |> Stdout.line
 
-    when args is
-        [_programName] ->
-            runPrompt {}
+        Err (ParseError _token message) ->
+            Stdout.line message
 
-        [_programName, fileName] ->
-            runFile fileName
+# main : Task {} I32
+# main =
+#     args <- Arg.list |> Task.await
 
-        _ ->
-            {} <- Stdout.line "Usage: plover [script]" |> Task.await
-            Task.err 64
+#     when args is
+#         [_programName] ->
+#             runPrompt {}
+
+#         [_programName, fileName] ->
+#             runFile fileName
+
+#         _ ->
+#             {} <- Stdout.line "Usage: plover [script]" |> Task.await
+#             Task.err 64
 
 runPrompt : {} -> Task {} I32
 runPrompt = \{} ->
