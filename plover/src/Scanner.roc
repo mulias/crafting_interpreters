@@ -24,7 +24,7 @@ scan = \source ->
 loop : Scanner -> Scanner
 loop = \scanner ->
     if atEnd scanner then
-        scanner
+        scanner |> step
     else
         scanner |> step |> loop
 
@@ -33,7 +33,7 @@ step = \scanner ->
     nextScanner = advance scanner
 
     when nextChar is
-        0 -> nextScanner
+        0 -> scanner |> addToken Eof
         '(' -> nextScanner |> addToken LeftParen
         ')' -> nextScanner |> addToken RightParen
         '{' -> nextScanner |> addToken LeftBrace

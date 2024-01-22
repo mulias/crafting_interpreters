@@ -45,6 +45,7 @@ Kind : [
     True,
     Var,
     While,
+    Eof,
     Err ErrorReason,
 ]
 
@@ -103,6 +104,7 @@ toStr = \{ kind, lexeme } ->
         True -> "True"
         Var -> "Var"
         While -> "While"
+        Eof -> "Eof"
         Err (UnexpectedChar char) -> "Err UnexpectedChar \(Num.toStr char)"
         Err (InvalidNumStr str) -> "Err InvalidNumberStr \(str)"
         Err (UnexpectedEnd str) -> "Err Unexpected End \(str)"
