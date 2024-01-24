@@ -23,6 +23,18 @@ pub const Obj = struct {
         return Value{ .Obj = self };
     }
 
+    pub fn isEql(a: *Obj, b: *Obj) bool {
+        if (a.isString() and b.isString()) {
+            return std.mem.eql(u8, a.asString().bytes, b.asString().bytes);
+        } else {
+            return false;
+        }
+    }
+
+    pub fn isString(self: *Obj) bool {
+        return self.objType == .String;
+    }
+
     pub fn asString(self: *Obj) *String {
         return @fieldParentPtr(String, "obj", self);
     }

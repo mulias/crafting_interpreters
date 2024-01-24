@@ -72,7 +72,7 @@ pub const VM = struct {
             .Equal => {
                 const b = self.pop();
                 const a = self.pop();
-                try self.push(.{ .Bool = valuesEqual(a, b) });
+                try self.push(.{ .Bool = a.isEql(b) });
             },
             .Greater => {
                 if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
@@ -123,18 +123,6 @@ pub const VM = struct {
             .Nil => true,
             else => false,
         };
-    }
-
-    fn valuesEqual(a: Value, b: Value) bool {
-        if (a.isBool() and b.isBool()) {
-            return a.asBool() == b.asBool();
-        } else if (a.isNumber() and b.isNumber()) {
-            return a.asNumber() == b.asNumber();
-        } else if (a.isNil() and b.isNil()) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     fn add(x: f64, y: f64) f64 {

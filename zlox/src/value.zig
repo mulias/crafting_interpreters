@@ -28,6 +28,20 @@ pub const Value = union(ValueType) {
         }
     }
 
+    pub fn isEql(a: Value, b: Value) bool {
+        if (a.isBool() and b.isBool()) {
+            return a.asBool() == b.asBool();
+        } else if (a.isNumber() and b.isNumber()) {
+            return a.asNumber() == b.asNumber();
+        } else if (a.isNil() and b.isNil()) {
+            return true;
+        } else if (a.isObj() and b.isObj()) {
+            return a.asObj().isEql(b.asObj());
+        } else {
+            return false;
+        }
+    }
+
     pub fn isNumber(self: Value) bool {
         switch (self) {
             .Number => return true,
@@ -66,7 +80,7 @@ pub const Value = union(ValueType) {
         }
     }
 
-    pub fn asObj(self: Value) bool {
+    pub fn asObj(self: Value) *Obj {
         std.debug.assert(self.isObj());
         return self.Obj;
     }
