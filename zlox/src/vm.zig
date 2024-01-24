@@ -39,11 +39,11 @@ pub const VM = struct {
         var chunk = Chunk.init(self.allocator);
         defer chunk.deinit();
 
-        const success = try compiler.compile(source, &chunk);
-        if (!success) return InterpretResult.CompileError;
-
         self.chunk = &chunk;
         self.ip = 0;
+
+        const success = try compiler.compile(self, source);
+        if (!success) return InterpretResult.CompileError;
 
         return try self.run();
     }

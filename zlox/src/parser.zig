@@ -6,6 +6,8 @@ const Token = @import("./token.zig").Token;
 const TokenType = @import("./token.zig").TokenType;
 const logger = @import("./logger.zig");
 const Value = @import("./value.zig").Value;
+const Obj = @import("./object.zig").Obj;
+const VM = @import("./vm.zig").VM;
 
 pub const Precedence = enum(u8) {
     None,
@@ -49,17 +51,17 @@ const CompilerError = error{
 };
 
 pub const Parser = struct {
-    scanner: *Scanner,
-    chunk: *Chunk,
+    vm: *VM,
+    scanner: Scanner,
     current: Token,
     previous: Token,
     hadError: bool,
     panicMode: bool,
 
-    pub fn init(scanner: *Scanner, chunk: *Chunk) Parser {
+    pub fn init(vm: *VM, source: []const u8) Parser {
         return Parser{
-            .scanner = scanner,
-            .chunk = chunk,
+            .vm = vm,
+            .scanner = Scanner.init(source),
             .current = undefined,
             .previous = undefined,
             .hadError = false,
@@ -92,7 +94,11 @@ pub const Parser = struct {
 
     pub fn end(self: *Parser) !void {
         try self.emitReturn();
-        if (!self.hadError) self.chunk.disassemble("code");
+        if (!self.hadError) self.chunk().disassemble("code");
+    }
+
+    fn chunk(self: *Parser) *Chunk {
+        return self.vm.chunk;
     }
 
     fn number(self: *Parser) !void {
@@ -107,6 +113,13 @@ pub const Parser = struct {
             .Nil => try self.emitOp(.Nil),
             else => self.errorAtPrevious("Unexpected literal"),
         }
+    }
+
+    fn string(self: *Parser) !void {
+        // Don't include quotes from start/end of string.
+        const source = self.previous.lexeme[1 .. self.previous.lexeme.len - 1];
+        const value = (try Obj.String.copy(self.vm, source)).obj.value();
+        try self.emitConstant(value);
     }
 
     fn grouping(self: *Parser) !void {
@@ -234,7 +247,8 @@ pub const Parser = struct {
             .GreaterEqual, .Less, .LessEqual => {},
 
             // Literals.
-            .Identifier, .String => {},
+            .Identifier => {},
+            .String => return self.string(),
             .Number => return self.number(),
 
             // Keywords.
@@ -282,11 +296,11 @@ pub const Parser = struct {
     }
 
     fn emitByte(self: *Parser, byte: u8) !void {
-        try self.chunk.write(byte, self.previous.line);
+        try self.chunk().write(byte, self.previous.line);
     }
 
     fn emitOp(self: *Parser, op: OpCode) !void {
-        try self.chunk.writeOp(op, self.previous.line);
+        try self.chunk().writeOp(op, self.previous.line);
     }
 
     fn emitReturn(self: *Parser) !void {
@@ -299,7 +313,7 @@ pub const Parser = struct {
     }
 
     fn makeConstant(self: *Parser, value: Value) !u8 {
-        const idx = try self.chunk.addConstant(value);
+        const idx = try self.chunk().addConstant(value);
         if (idx > std.math.maxInt(u8)) {
             self.errorAtPrevious("Too many constants in one chunk.");
             return 0;

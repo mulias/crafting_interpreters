@@ -4,11 +4,10 @@ const Parser = @import("./parser.zig").Parser;
 const Token = @import("./token.zig").Token;
 const TokenType = @import("./token.zig").TokenType;
 const logger = @import("./logger.zig");
-const Chunk = @import("./chunk.zig").Chunk;
+const VM = @import("./vm.zig").VM;
 
-pub fn compile(source: []const u8, chunk: *Chunk) !bool {
-    var scanner = Scanner.init(source);
-    var parser = Parser.init(&scanner, chunk);
+pub fn compile(vm: *VM, source: []const u8) !bool {
+    var parser = Parser.init(vm, source);
 
     parser.advance();
     try parser.expression();
