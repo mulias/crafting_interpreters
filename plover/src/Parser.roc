@@ -112,12 +112,13 @@ primary = \state ->
         Number n -> Ok (state1, Literal { value: Number n })
         String s -> Ok (state1, Literal { value: String s })
         LeftParen ->
-            (state2, expr) <- expression state1 |> Result.try
-            if match state2 RightParen then
-                Ok (advance state2, Grouping { expr })
-            else
-                Err (error state2 "Expect ')' after expression.")
+            crash "fooo"
 
+        # (state2, expr) <- expression state1 |> Result.try
+        # if match state2 RightParen then
+        #     Ok (advance state2, Grouping { expr })
+        # else
+        #     Err (error state2 "Expect ')' after expression.")
         _ -> Err (error state "Expected expression")
 
 error : ParseState, Str -> [ParseError Token Str]
