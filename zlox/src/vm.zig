@@ -7,6 +7,7 @@ const Value = @import("./value.zig").Value;
 const printValue = @import("./value.zig").print;
 const compiler = @import("./compiler.zig");
 const logger = @import("./logger.zig");
+const Obj = @import("./object.zig").Obj;
 
 const debugTraceExecution = true;
 
@@ -95,7 +96,18 @@ pub const VM = struct {
                 }
             },
             .Nil => try self.push(.{ .Nil = undefined }),
-            .Add => return try self.binaryNumericOp(add),
+            .Add => {
+                const rhs = self.pop();
+                const lhs = self.pop();
+
+                if (lhs.isNumber() and rhs.isNumber()) {
+                    try self.push(.{ .Number = lhs.asNumber() + rhs.asNumber() });
+                } else if (rhs.isObj() and lhs.isObj() and rhs.asObj().isString() and lhs.asObj().isString()) {
+                    try self.concatenate(lhs.asObj().asString(), rhs.asObj().asString());
+                } else {
+                    return self.runtimeError("Operands must be numbers or strings.");
+                }
+            },
             .Subtract => return try self.binaryNumericOp(sub),
             .Multiply => return try self.binaryNumericOp(mul),
             .Divide => return try self.binaryNumericOp(div),
@@ -152,6 +164,15 @@ pub const VM = struct {
         }
 
         return null;
+    }
+
+    fn concatenate(self: *VM, lhs: *Obj.String, rhs: *Obj.String) !void {
+        const buffer = try self.allocator.alloc(u8, lhs.bytes.len + rhs.bytes.len);
+        std.mem.copy(u8, buffer[0..lhs.bytes.len], lhs.bytes);
+        std.mem.copy(u8, buffer[lhs.bytes.len..], rhs.bytes);
+
+        const string = try Obj.String.create(self, buffer);
+        try self.push(string.obj.value());
     }
 
     fn readByte(self: *VM) u8 {
