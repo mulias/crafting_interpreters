@@ -34,7 +34,10 @@ fn repl(allocator: Allocator) !void {
     while (true) {
         logger.info("> ", .{});
         if (try stdin.readUntilDelimiterOrEof(&buffer, '\n')) |source| {
-            _ = try vm.interpret(source);
+            vm.interpret(source) catch |err| switch (err) {
+                error.CompileError, error.RuntimeError => {},
+                error.OutOfMemory => return err,
+            };
             logger.info("\n", .{});
         }
     }
@@ -47,7 +50,11 @@ fn runFile(allocator: Allocator, path: []const u8) !void {
     const source = try std.fs.cwd().readFileAlloc(allocator, path, 1e10);
     defer allocator.free(source);
 
-    _ = try vm.interpret(source);
+    vm.interpret(source) catch |err| switch (err) {
+        error.CompileError => std.process.exit(65),
+        error.RuntimeError => std.process.exit(70),
+        error.OutOfMemory => return err,
+    };
 }
 
 test {

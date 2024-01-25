@@ -6,7 +6,7 @@ const TokenType = @import("./token.zig").TokenType;
 const logger = @import("./logger.zig");
 const VM = @import("./vm.zig").VM;
 
-pub fn compile(vm: *VM, source: []const u8) !bool {
+pub fn compile(vm: *VM, source: []const u8) !void {
     var parser = Parser.init(vm, source);
 
     parser.advance();
@@ -14,5 +14,5 @@ pub fn compile(vm: *VM, source: []const u8) !bool {
     parser.consume(TokenType.Eof, "Expect end of expression.");
     try parser.end();
 
-    return !parser.hadError;
+    if (parser.hadError) return error.CompileError;
 }

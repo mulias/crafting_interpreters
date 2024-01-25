@@ -43,11 +43,9 @@ pub const Precedence = enum(u8) {
 // trouble inferring error sets for recursive functions.
 //
 // See https://github.com/ziglang/zig/issues/2971
-const CompilerError = error{
+const ParserError = error{
     // Can happen when we try to emit bytecode or constants
     OutOfMemory,
-    // Can happen when we try to parse floats
-    InvalidCharacter,
 };
 
 pub const Parser = struct {
@@ -102,8 +100,14 @@ pub const Parser = struct {
     }
 
     fn number(self: *Parser) !void {
-        const value = try std.fmt.parseFloat(f64, self.previous.lexeme);
-        try self.emitConstant(.{ .Number = value });
+        if (std.fmt.parseFloat(f64, self.previous.lexeme)) |value| {
+            try self.emitConstant(.{ .Number = value });
+        } else |e| switch (e) {
+            error.InvalidCharacter => {
+                self.errorAtPrevious("Could not parse number");
+                return;
+            },
+        }
     }
 
     fn literal(self: *Parser) !void {
@@ -165,7 +169,7 @@ pub const Parser = struct {
         }
     }
 
-    fn parsePrecedence(self: *Parser, precedence: Precedence) CompilerError!void {
+    fn parsePrecedence(self: *Parser, precedence: Precedence) ParserError!void {
         self.advance();
         try self.parseAsPrefix(self.previous.tokenType);
 

@@ -11,12 +11,6 @@ const Obj = @import("./object.zig").Obj;
 
 const debugTraceExecution = true;
 
-pub const InterpretResult = enum {
-    Ok,
-    CompileError,
-    RuntimeError,
-};
-
 pub const VM = struct {
     allocator: Allocator,
     chunk: *Chunk,
@@ -39,33 +33,32 @@ pub const VM = struct {
         self.freeObjects();
     }
 
-    pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
+    pub fn interpret(self: *VM, source: []const u8) !void {
         var chunk = Chunk.init(self.allocator);
         defer chunk.deinit();
 
         self.chunk = &chunk;
         self.ip = 0;
 
-        const success = try compiler.compile(self, source);
-        if (!success) return InterpretResult.CompileError;
-
-        return try self.run();
+        try compiler.compile(self, source);
+        try self.run();
     }
 
-    pub fn run(self: *VM) !InterpretResult {
+    pub fn run(self: *VM) !void {
         while (true) {
             if (debugTraceExecution) {
                 self.printStack();
                 _ = self.chunk.disassembleInstruction(self.ip);
             }
 
-            if (try self.nextInstruction()) |result| return result;
+            const opCode = @as(OpCode, @enumFromInt(self.readByte()));
+            try self.runOp(opCode);
+            if (opCode == .Return and self.stack.items.len == 0) break;
         }
     }
 
-    fn nextInstruction(self: *VM) !?InterpretResult {
-        const instruction = @as(OpCode, @enumFromInt(self.readByte()));
-        switch (instruction) {
+    fn runOp(self: *VM, opCode: OpCode) !void {
+        switch (opCode) {
             .Constant => {
                 const constantIdx = self.readByte();
                 const value = self.chunk.constants.items[constantIdx];
@@ -125,11 +118,8 @@ pub const VM = struct {
             },
             .Return => {
                 self.pop().print();
-                return InterpretResult.Ok;
             },
         }
-
-        return null;
     }
 
     fn isFalsey(value: Value) bool {
@@ -156,7 +146,7 @@ pub const VM = struct {
         return x / y;
     }
 
-    fn binaryNumericOp(self: *VM, comptime op: anytype) !?InterpretResult {
+    fn binaryNumericOp(self: *VM, comptime op: anytype) !void {
         const rhs = self.pop();
         const lhs = self.pop();
 
@@ -165,8 +155,6 @@ pub const VM = struct {
         } else {
             return self.runtimeError("Operands must be numbers.");
         }
-
-        return null;
     }
 
     fn concatenate(self: *VM, lhs: *Obj.String, rhs: *Obj.String) !void {
@@ -211,12 +199,12 @@ pub const VM = struct {
         logger.debug("\n", .{});
     }
 
-    fn runtimeError(self: *VM, message: []const u8) InterpretResult {
+    fn runtimeError(self: *VM, message: []const u8) !void {
         const line = self.chunk.lines.items[self.ip];
         logger.warn("{s}", .{message});
         logger.warn("\n[line {d}] in script\n", .{line});
         self.resetStack();
-        return InterpretResult.RuntimeError;
+        return error.RuntimeError;
     }
 
     fn freeObjects(self: *VM) void {
@@ -234,9 +222,10 @@ test "vm" {
     var vm = VM.init(alloc);
     defer vm.deinit();
 
-    try std.testing.expect(try vm.interpret("1 + 1") == .Ok);
-    try std.testing.expect(try vm.interpret(
+    try vm.interpret("1 + 1");
+    try vm.interpret(
         \\"st" + "ri" + "ng"
-    ) == .Ok);
-    try std.testing.expect(try vm.interpret("1 + ") == .CompileError);
+    );
+    try std.testing.expectError(error.CompileError, vm.interpret("1 + "));
+    try std.testing.expectError(error.RuntimeError, vm.interpret("1 + true"));
 }
