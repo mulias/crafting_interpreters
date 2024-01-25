@@ -22,6 +22,7 @@ pub const VM = struct {
     chunk: *Chunk,
     ip: usize,
     stack: ArrayList(Value),
+    objects: ?*Obj,
 
     pub fn init(allocator: Allocator) VM {
         return VM{
@@ -29,11 +30,13 @@ pub const VM = struct {
             .chunk = undefined,
             .ip = undefined,
             .stack = ArrayList(Value).init(allocator),
+            .objects = null,
         };
     }
 
     pub fn deinit(self: *VM) void {
         self.stack.deinit();
+        self.freeObjects();
     }
 
     pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
@@ -215,6 +218,15 @@ pub const VM = struct {
         self.resetStack();
         return InterpretResult.RuntimeError;
     }
+
+    fn freeObjects(self: *VM) void {
+        var object = self.objects;
+        while (object) |o| {
+            var next = o.next;
+            o.destroy(self);
+            object = next;
+        }
+    }
 };
 
 test "vm" {
@@ -223,5 +235,8 @@ test "vm" {
     defer vm.deinit();
 
     try std.testing.expect(try vm.interpret("1 + 1") == .Ok);
+    try std.testing.expect(try vm.interpret(
+        \\"st" + "ri" + "ng"
+    ) == .Ok);
     try std.testing.expect(try vm.interpret("1 + ") == .CompileError);
 }

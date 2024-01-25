@@ -4,6 +4,7 @@ const Value = @import("./value.zig").Value;
 
 pub const Obj = struct {
     objType: Type,
+    next: ?*Obj,
 
     pub const Type = enum(u8) {
         String,
@@ -14,9 +15,17 @@ pub const Obj = struct {
 
         ptr.obj = Obj{
             .objType = objType,
+            .next = vm.objects,
         };
 
+        vm.objects = &ptr.obj;
         return &ptr.obj;
+    }
+
+    pub fn destroy(self: *Obj, vm: *VM) void {
+        switch (self.objType) {
+            .String => self.asString().destroy(vm),
+        }
     }
 
     pub fn value(self: *Obj) Value {
@@ -54,6 +63,11 @@ pub const Obj = struct {
             const string = obj.asString();
             string.bytes = bytes;
             return string;
+        }
+
+        pub fn destroy(self: *String, vm: *VM) void {
+            vm.allocator.free(self.bytes);
+            vm.allocator.destroy(self);
         }
     };
 };
