@@ -1,6 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
+const StringHashMap = std.StringHashMap;
 const Chunk = @import("./chunk.zig").Chunk;
 const OpCode = @import("./chunk.zig").OpCode;
 const Value = @import("./value.zig").Value;
@@ -17,6 +18,7 @@ pub const VM = struct {
     ip: usize,
     stack: ArrayList(Value),
     objects: ?*Obj,
+    strings: StringHashMap(*Obj.String),
 
     pub fn init(allocator: Allocator) VM {
         return VM{
@@ -25,12 +27,14 @@ pub const VM = struct {
             .ip = undefined,
             .stack = ArrayList(Value).init(allocator),
             .objects = null,
+            .strings = StringHashMap(*Obj.String).init(allocator),
         };
     }
 
     pub fn deinit(self: *VM) void {
         self.stack.deinit();
         self.freeObjects();
+        self.strings.deinit();
     }
 
     pub fn interpret(self: *VM, source: []const u8) !void {

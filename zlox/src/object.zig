@@ -34,7 +34,8 @@ pub const Obj = struct {
 
     pub fn isEql(a: *Obj, b: *Obj) bool {
         if (a.isString() and b.isString()) {
-            return std.mem.eql(u8, a.asString().bytes, b.asString().bytes);
+            // Strings are interned so they can be compared by address
+            return a == b;
         } else {
             return false;
         }
@@ -53,6 +54,9 @@ pub const Obj = struct {
         bytes: []const u8,
 
         pub fn copy(vm: *VM, bytes: []const u8) !*String {
+            const interned = vm.strings.get(bytes);
+            if (interned) |s| return s;
+
             const buffer = try vm.allocator.alloc(u8, bytes.len);
             std.mem.copy(u8, buffer, bytes);
             return String.create(vm, buffer);
@@ -61,7 +65,12 @@ pub const Obj = struct {
         pub fn create(vm: *VM, bytes: []const u8) !*String {
             const obj = try Obj.allocate(vm, String, .String);
             const string = obj.asString();
+
             string.bytes = bytes;
+
+            // Intern string
+            try vm.strings.put(bytes, string);
+
             return string;
         }
 
