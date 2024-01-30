@@ -70,6 +70,9 @@ pub const VM = struct {
             },
             .True => try self.push(.{ .Bool = true }),
             .False => try self.push(.{ .Bool = false }),
+            .Pop => {
+                _ = self.pop();
+            },
             .Equal => {
                 const b = self.pop();
                 const a = self.pop();
@@ -120,9 +123,11 @@ pub const VM = struct {
                     return self.runtimeError("Operand must be a number.");
                 }
             },
-            .Return => {
-                self.pop().print();
+            .Print => {
+                self.pop().print(logger.info);
+                logger.info("\n", .{});
             },
+            .Return => {},
         }
     }
 
@@ -197,7 +202,7 @@ pub const VM = struct {
         logger.debug("          ", .{});
         for (self.stack.items) |value| {
             logger.debug("[ ", .{});
-            value.print();
+            value.print(logger.debug);
             logger.debug(" ]", .{});
         }
         logger.debug("\n", .{});
@@ -226,10 +231,11 @@ test "vm" {
     var vm = VM.init(alloc);
     defer vm.deinit();
 
-    try vm.interpret("1 + 1");
+    try vm.interpret("1 + 1;");
     try vm.interpret(
-        \\"st" + "ri" + "ng"
+        \\print "st" + "ri" + "ng";
+        \\print 1 + 3;
     );
     try std.testing.expectError(error.CompileError, vm.interpret("1 + "));
-    try std.testing.expectError(error.RuntimeError, vm.interpret("1 + true"));
+    try std.testing.expectError(error.RuntimeError, vm.interpret("1 + true;"));
 }

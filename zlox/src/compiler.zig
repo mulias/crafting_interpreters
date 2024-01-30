@@ -10,8 +10,13 @@ pub fn compile(vm: *VM, source: []const u8) !void {
     var parser = Parser.init(vm, source);
 
     parser.advance();
-    try parser.expression();
+
+    while (!parser.match(TokenType.Eof)) {
+        try parser.declaration();
+    }
+
     parser.consume(TokenType.Eof, "Expect end of expression.");
+
     try parser.end();
 
     if (parser.hadError) return error.CompileError;

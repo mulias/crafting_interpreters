@@ -86,8 +86,33 @@ pub const Parser = struct {
         }
     }
 
+    pub fn match(self: *Parser, tokenType: TokenType) bool {
+        if (self.check(tokenType)) {
+            self.advance();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    pub fn check(self: *Parser, tokenType: TokenType) bool {
+        return self.current.tokenType == tokenType;
+    }
+
     pub fn expression(self: *Parser) !void {
         try self.parsePrecedence(.Assignment);
+    }
+
+    pub fn declaration(self: *Parser) !void {
+        try self.statement();
+    }
+
+    pub fn statement(self: *Parser) !void {
+        if (self.match(.Print)) {
+            try self.printStatement();
+        } else {
+            try self.expressionStatement();
+        }
     }
 
     pub fn end(self: *Parser) !void {
@@ -95,8 +120,16 @@ pub const Parser = struct {
         if (!self.hadError) self.chunk().disassemble("code");
     }
 
-    fn chunk(self: *Parser) *Chunk {
-        return self.vm.chunk;
+    fn printStatement(self: *Parser) !void {
+        try self.expression();
+        self.consume(.Semicolon, "Expect ';' after value.");
+        try self.emitOp(.Print);
+    }
+
+    fn expressionStatement(self: *Parser) !void {
+        try self.expression();
+        self.consume(.Semicolon, "Expect ';' after expression.");
+        try self.emitOp(.Pop);
     }
 
     fn number(self: *Parser) !void {
@@ -297,6 +330,10 @@ pub const Parser = struct {
         }
 
         self.errorAtPrevious("Expected expression.");
+    }
+
+    fn chunk(self: *Parser) *Chunk {
+        return self.vm.chunk;
     }
 
     fn emitByte(self: *Parser, byte: u8) !void {

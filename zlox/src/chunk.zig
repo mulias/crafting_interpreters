@@ -9,6 +9,7 @@ pub const OpCode = enum(u8) {
     Nil,
     True,
     False,
+    Pop,
     Equal,
     Greater,
     Less,
@@ -18,6 +19,7 @@ pub const OpCode = enum(u8) {
     Divide,
     Not,
     Negate,
+    Print,
     Return,
 };
 
@@ -80,6 +82,7 @@ pub const Chunk = struct {
             .Constant => self.constantInstruction("Constant", offset),
             .True,
             .False,
+            .Pop,
             .Equal,
             .Greater,
             .Less,
@@ -90,6 +93,7 @@ pub const Chunk = struct {
             .Divide,
             .Not,
             .Negate,
+            .Print,
             .Return,
             => self.simpleInstruction(instruction, offset),
         };
@@ -105,7 +109,7 @@ pub const Chunk = struct {
         var constantIdx = self.code.items[offset + 1];
         var constantValue = self.constants.items[constantIdx];
         logger.debug("{s} {} '", .{ name, constantIdx });
-        constantValue.print();
+        constantValue.print(logger.debug);
         logger.debug("'\n", .{});
         return offset + 2;
     }

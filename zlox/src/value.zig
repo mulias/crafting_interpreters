@@ -19,12 +19,12 @@ pub const Value = union(ValueType) {
     Nil: void,
     Obj: *Obj,
 
-    pub fn print(value: Value) void {
+    pub fn print(value: Value, printer: anytype) void {
         switch (value) {
-            .Bool => |b| logger.debug("{}", .{b}),
-            .Number => |n| logger.debug("{d}", .{n}),
-            .Nil => logger.debug("nil", .{}),
-            .Obj => |o| logger.debug("{s}", .{o.asString().bytes}),
+            .Bool => |b| printer("{}", .{b}),
+            .Number => |n| printer("{d}", .{n}),
+            .Nil => printer("nil", .{}),
+            .Obj => |o| printer("{s}", .{o.asString().bytes}),
         }
     }
 
