@@ -105,6 +105,8 @@ pub const Parser = struct {
 
     pub fn declaration(self: *Parser) !void {
         try self.statement();
+
+        if (self.panicMode) self.syncronize();
     }
 
     pub fn statement(self: *Parser) !void {
@@ -390,5 +392,24 @@ pub const Parser = struct {
         logger.warn(": {s}\n", .{message});
 
         self.hadError = true;
+    }
+
+    fn syncronize(self: *Parser) void {
+        self.panicMode = false;
+
+        while (self.current.tokenType != .Eof) {
+            if (self.previous.tokenType == .Semicolon) return;
+
+            switch (self.current.tokenType) {
+                .Class, .Fun, .Var, .For, .If, .While, .Print, .Return => {
+                    return;
+                },
+                else => {
+                    // Do nothing.
+                },
+            }
+
+            self.advance();
+        }
     }
 };

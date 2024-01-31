@@ -232,10 +232,12 @@ test "vm" {
     defer vm.deinit();
 
     try vm.interpret("1 + 1;");
+
     try vm.interpret(
         \\print "st" + "ri" + "ng";
         \\print 1 + 3;
     );
+
     try std.testing.expectError(error.CompileError, vm.interpret("1 + "));
     try std.testing.expectError(error.RuntimeError, vm.interpret("1 + true;"));
 }
