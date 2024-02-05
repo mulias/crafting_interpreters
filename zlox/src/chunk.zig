@@ -10,6 +10,8 @@ pub const OpCode = enum(u8) {
     True,
     False,
     Pop,
+    GetGlobal,
+    DefineGlobal,
     Equal,
     Greater,
     Less,
@@ -79,7 +81,10 @@ pub const Chunk = struct {
 
         const instruction = @as(OpCode, @enumFromInt(self.code.items[offset]));
         return switch (instruction) {
-            .Constant => self.constantInstruction("Constant", offset),
+            .Constant,
+            .GetGlobal,
+            .DefineGlobal,
+            => self.constantInstruction(instruction, offset),
             .True,
             .False,
             .Pop,
@@ -105,10 +110,10 @@ pub const Chunk = struct {
         return offset + 1;
     }
 
-    pub fn constantInstruction(self: *Chunk, name: []const u8, offset: usize) usize {
+    pub fn constantInstruction(self: *Chunk, instruction: OpCode, offset: usize) usize {
         var constantIdx = self.code.items[offset + 1];
         var constantValue = self.constants.items[constantIdx];
-        logger.debug("{s} {} '", .{ name, constantIdx });
+        logger.debug("{s} {} '", .{ @tagName(instruction), constantIdx });
         constantValue.print(logger.debug);
         logger.debug("'\n", .{});
         return offset + 2;

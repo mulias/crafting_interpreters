@@ -104,7 +104,11 @@ pub const Parser = struct {
     }
 
     pub fn declaration(self: *Parser) !void {
-        try self.statement();
+        if (self.match(.Var)) {
+            try self.varDeclaration();
+        } else {
+            try self.statement();
+        }
 
         if (self.panicMode) self.syncronize();
     }
@@ -122,6 +126,21 @@ pub const Parser = struct {
         if (!self.hadError) self.chunk().disassemble("code");
     }
 
+    fn varDeclaration(self: *Parser) !void {
+        self.consume(.Identifier, "Expect varaible name.");
+        const name = try Obj.String.copy(self.vm, self.previous.lexeme);
+
+        if (self.match(.Equal)) {
+            try self.expression();
+        } else {
+            try self.emitOp(.Nil);
+        }
+
+        self.consume(.Semicolon, "Expect ';' after variable declaration.");
+
+        try self.emitOpWithValue(.DefineGlobal, name.obj.value());
+    }
+
     fn printStatement(self: *Parser) !void {
         try self.expression();
         self.consume(.Semicolon, "Expect ';' after value.");
@@ -136,7 +155,7 @@ pub const Parser = struct {
 
     fn number(self: *Parser) !void {
         if (std.fmt.parseFloat(f64, self.previous.lexeme)) |value| {
-            try self.emitConstant(.{ .Number = value });
+            try self.emitOpWithValue(.Constant, .{ .Number = value });
         } else |e| switch (e) {
             error.InvalidCharacter => {
                 self.errorAtPrevious("Could not parse number");
@@ -158,7 +177,16 @@ pub const Parser = struct {
         // Don't include quotes from start/end of string.
         const source = self.previous.lexeme[1 .. self.previous.lexeme.len - 1];
         const value = (try Obj.String.copy(self.vm, source)).obj.value();
-        try self.emitConstant(value);
+        try self.emitOpWithValue(.Constant, value);
+    }
+
+    fn variable(self: *Parser) !void {
+        try self.namedVariable();
+    }
+
+    fn namedVariable(self: *Parser) !void {
+        const name = try Obj.String.copy(self.vm, self.previous.lexeme);
+        try self.emitOpWithValue(.GetGlobal, name.obj.value());
     }
 
     fn grouping(self: *Parser) !void {
@@ -286,7 +314,7 @@ pub const Parser = struct {
             .GreaterEqual, .Less, .LessEqual => {},
 
             // Literals.
-            .Identifier => {},
+            .Identifier => return self.variable(),
             .String => return self.string(),
             .Number => return self.number(),
 
@@ -350,8 +378,8 @@ pub const Parser = struct {
         try self.emitOp(.Return);
     }
 
-    fn emitConstant(self: *Parser, value: Value) !void {
-        try self.emitOp(.Constant);
+    fn emitOpWithValue(self: *Parser, op: OpCode, value: Value) !void {
+        try self.emitOp(op);
         try self.emitByte(try self.makeConstant(value));
     }
 

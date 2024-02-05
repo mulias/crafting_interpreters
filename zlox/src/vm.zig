@@ -2,6 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const StringHashMap = std.StringHashMap;
+const AutoHashMap = std.AutoHashMap;
 const Chunk = @import("./chunk.zig").Chunk;
 const OpCode = @import("./chunk.zig").OpCode;
 const Value = @import("./value.zig").Value;
@@ -18,6 +19,7 @@ pub const VM = struct {
     ip: usize,
     stack: ArrayList(Value),
     objects: ?*Obj,
+    globals: AutoHashMap(*Obj.String, Value),
     strings: StringHashMap(*Obj.String),
 
     pub fn init(allocator: Allocator) VM {
@@ -27,6 +29,7 @@ pub const VM = struct {
             .ip = undefined,
             .stack = ArrayList(Value).init(allocator),
             .objects = null,
+            .globals = AutoHashMap(*Obj.String, Value).init(allocator),
             .strings = StringHashMap(*Obj.String).init(allocator),
         };
     }
@@ -34,6 +37,7 @@ pub const VM = struct {
     pub fn deinit(self: *VM) void {
         self.stack.deinit();
         self.freeObjects();
+        self.globals.deinit();
         self.strings.deinit();
     }
 
@@ -73,6 +77,21 @@ pub const VM = struct {
             .Pop => {
                 _ = self.pop();
             },
+            .GetGlobal => {
+                const nameIdx = self.readByte();
+                const name = self.chunk.constants.items[nameIdx].asObj().asString();
+                if (self.globals.get(name)) |value| {
+                    try self.push(value);
+                } else {
+                    return self.runtimeError("Undefined variable '{s}'.", .{name.bytes});
+                }
+            },
+            .DefineGlobal => {
+                const nameIdx = self.readByte();
+                const name = self.chunk.constants.items[nameIdx].asObj().asString();
+                try self.globals.put(name, self.peek(0));
+                _ = self.pop();
+            },
             .Equal => {
                 const b = self.pop();
                 const a = self.pop();
@@ -85,7 +104,7 @@ pub const VM = struct {
 
                     try self.push(.{ .Bool = lhs > rhs });
                 } else {
-                    return self.runtimeError("Operands must be numbers.");
+                    return self.runtimeError("Operands must be numbers.", .{});
                 }
             },
             .Less => {
@@ -95,7 +114,7 @@ pub const VM = struct {
 
                     try self.push(.{ .Bool = lhs < rhs });
                 } else {
-                    return self.runtimeError("Operands must be numbers.");
+                    return self.runtimeError("Operands must be numbers.", .{});
                 }
             },
             .Nil => try self.push(.{ .Nil = undefined }),
@@ -108,7 +127,7 @@ pub const VM = struct {
                 } else if (rhs.isObj() and lhs.isObj() and rhs.asObj().isString() and lhs.asObj().isString()) {
                     try self.concatenate(lhs.asObj().asString(), rhs.asObj().asString());
                 } else {
-                    return self.runtimeError("Operands must be numbers or strings.");
+                    return self.runtimeError("Operands must be numbers or strings.", .{});
                 }
             },
             .Subtract => return try self.binaryNumericOp(sub),
@@ -120,7 +139,7 @@ pub const VM = struct {
                     const n = self.pop().asNumber();
                     try self.push(.{ .Number = -n });
                 } else {
-                    return self.runtimeError("Operand must be a number.");
+                    return self.runtimeError("Operand must be a number.", .{});
                 }
             },
             .Print => {
@@ -162,7 +181,7 @@ pub const VM = struct {
         if (lhs.isNumber() and rhs.isNumber()) {
             try self.push(.{ .Number = op(lhs.asNumber(), rhs.asNumber()) });
         } else {
-            return self.runtimeError("Operands must be numbers.");
+            return self.runtimeError("Operands must be numbers.", .{});
         }
     }
 
@@ -208,9 +227,9 @@ pub const VM = struct {
         logger.debug("\n", .{});
     }
 
-    fn runtimeError(self: *VM, message: []const u8) !void {
+    fn runtimeError(self: *VM, comptime message: []const u8, args: anytype) !void {
         const line = self.chunk.lines.items[self.ip];
-        logger.warn("{s}", .{message});
+        logger.warn(message, args);
         logger.warn("\n[line {d}] in script\n", .{line});
         self.resetStack();
         return error.RuntimeError;
@@ -236,6 +255,12 @@ test "vm" {
     try vm.interpret(
         \\print "st" + "ri" + "ng";
         \\print 1 + 3;
+    );
+
+    try vm.interpret(
+        \\ var beverage = "cafe au lait";
+        \\ var breakfast = "beignets with " + beverage;
+        \\ print breakfast;
     );
 
     try std.testing.expectError(error.CompileError, vm.interpret("1 + "));
