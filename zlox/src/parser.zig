@@ -180,13 +180,19 @@ pub const Parser = struct {
         try self.emitOpWithValue(.Constant, value);
     }
 
-    fn variable(self: *Parser) !void {
-        try self.namedVariable();
+    fn variable(self: *Parser, canAssign: bool) !void {
+        try self.namedVariable(canAssign);
     }
 
-    fn namedVariable(self: *Parser) !void {
+    fn namedVariable(self: *Parser, canAssign: bool) !void {
         const name = try Obj.String.copy(self.vm, self.previous.lexeme);
-        try self.emitOpWithValue(.GetGlobal, name.obj.value());
+
+        if (canAssign and self.match(.Equal)) {
+            try self.expression();
+            try self.emitOpWithValue(.SetGlobal, name.obj.value());
+        } else {
+            try self.emitOpWithValue(.GetGlobal, name.obj.value());
+        }
     }
 
     fn grouping(self: *Parser) !void {
@@ -234,11 +240,18 @@ pub const Parser = struct {
 
     fn parsePrecedence(self: *Parser, precedence: Precedence) ParserError!void {
         self.advance();
-        try self.parseAsPrefix(self.previous.tokenType);
+
+        const canAssign = @intFromEnum(precedence) <= @intFromEnum(Precedence.Assignment);
+
+        try self.parseAsPrefix(self.previous.tokenType, canAssign);
 
         while (self.currentTokenPrecedence().isGreaterThan(precedence)) {
             self.advance();
             try self.parseAsInfix(self.previous.tokenType);
+        }
+
+        if (canAssign and self.match(.Equal)) {
+            self.errorAtPrevious("Invalid assignment target.");
         }
     }
 
@@ -301,7 +314,7 @@ pub const Parser = struct {
         return tokenPrecedence(self.current.tokenType);
     }
 
-    fn parseAsPrefix(self: *Parser, tokenType: TokenType) !void {
+    fn parseAsPrefix(self: *Parser, tokenType: TokenType, canAssign: bool) !void {
         switch (tokenType) {
             // Single-character tokens.
             .LeftParen => return self.grouping(),
@@ -314,7 +327,7 @@ pub const Parser = struct {
             .GreaterEqual, .Less, .LessEqual => {},
 
             // Literals.
-            .Identifier => return self.variable(),
+            .Identifier => return self.variable(canAssign),
             .String => return self.string(),
             .Number => return self.number(),
 

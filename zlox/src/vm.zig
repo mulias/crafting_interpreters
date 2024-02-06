@@ -92,6 +92,16 @@ pub const VM = struct {
                 try self.globals.put(name, self.peek(0));
                 _ = self.pop();
             },
+            .SetGlobal => {
+                const nameIdx = self.readByte();
+                const name = self.chunk.constants.items[nameIdx].asObj().asString();
+                const oldValue = try self.globals.fetchPut(name, self.peek(0));
+                const notDefined = oldValue == null;
+
+                if (notDefined) {
+                    return self.runtimeError("Undefined variable '{s}'.", .{name.bytes});
+                }
+            },
             .Equal => {
                 const b = self.pop();
                 const a = self.pop();
@@ -258,11 +268,17 @@ test "vm" {
     );
 
     try vm.interpret(
+        \\ var breakfast = "beignets";
         \\ var beverage = "cafe au lait";
-        \\ var breakfast = "beignets with " + beverage;
+        \\ breakfast = "beignets with " + beverage;
+        \\
         \\ print breakfast;
     );
 
     try std.testing.expectError(error.CompileError, vm.interpret("1 + "));
     try std.testing.expectError(error.RuntimeError, vm.interpret("1 + true;"));
+    try std.testing.expectError(error.CompileError, vm.interpret("a * b = c + d;"));
+    try std.testing.expectError(error.RuntimeError, vm.interpret(
+        \\ foo = 1;
+    ));
 }
