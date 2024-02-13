@@ -10,6 +10,8 @@ pub const OpCode = enum(u8) {
     True,
     False,
     Pop,
+    GetLocal,
+    SetLocal,
     GetGlobal,
     DefineGlobal,
     SetGlobal,
@@ -87,6 +89,9 @@ pub const Chunk = struct {
             .DefineGlobal,
             .SetGlobal,
             => self.constantInstruction(instruction, offset),
+            .GetLocal,
+            .SetLocal,
+            => self.byteInstruciton(instruction, offset),
             .True,
             .False,
             .Pop,
@@ -118,6 +123,12 @@ pub const Chunk = struct {
         logger.debug("{s} {} '", .{ @tagName(instruction), constantIdx });
         constantValue.print(logger.debug);
         logger.debug("'\n", .{});
+        return offset + 2;
+    }
+
+    fn byteInstruciton(self: *Chunk, instruction: OpCode, offset: usize) usize {
+        const slot = self.code.items[offset + 1];
+        logger.debug("{s} {d}\n", .{ @tagName(instruction), slot });
         return offset + 2;
     }
 };

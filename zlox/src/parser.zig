@@ -8,6 +8,7 @@ const logger = @import("./logger.zig");
 const Value = @import("./value.zig").Value;
 const Obj = @import("./object.zig").Obj;
 const VM = @import("./vm.zig").VM;
+const Compiler = @import("./compiler.zig").Compiler;
 
 pub const Precedence = enum(u8) {
     None,
@@ -50,15 +51,17 @@ const ParserError = error{
 
 pub const Parser = struct {
     vm: *VM,
+    compiler: *Compiler,
     scanner: Scanner,
     current: Token,
     previous: Token,
     hadError: bool,
     panicMode: bool,
 
-    pub fn init(vm: *VM, source: []const u8) Parser {
+    pub fn init(compiler: *Compiler, source: []const u8) Parser {
         return Parser{
-            .vm = vm,
+            .vm = compiler.vm,
+            .compiler = compiler,
             .scanner = Scanner.init(source),
             .current = undefined,
             .previous = undefined,
@@ -103,7 +106,7 @@ pub const Parser = struct {
         try self.parsePrecedence(.Assignment);
     }
 
-    pub fn declaration(self: *Parser) !void {
+    pub fn declaration(self: *Parser) ParserError!void {
         if (self.match(.Var)) {
             try self.varDeclaration();
         } else {
@@ -116,6 +119,10 @@ pub const Parser = struct {
     pub fn statement(self: *Parser) !void {
         if (self.match(.Print)) {
             try self.printStatement();
+        } else if (self.match(.LeftBrace)) {
+            self.beginScope();
+            try self.block();
+            try self.endScope();
         } else {
             try self.expressionStatement();
         }
@@ -126,10 +133,42 @@ pub const Parser = struct {
         if (!self.hadError) self.chunk().disassemble("code");
     }
 
+    fn beginScope(self: *Parser) void {
+        self.compiler.incScope();
+    }
+
+    fn endScope(self: *Parser) !void {
+        self.compiler.decScope();
+
+        var locals = &self.compiler.locals;
+        while (locals.items.len > 0 and
+            locals.getLast().depth > self.compiler.scopeDepth)
+        {
+            try self.emitOp(.Pop);
+            _ = locals.pop();
+        }
+    }
+
     fn varDeclaration(self: *Parser) !void {
         self.consume(.Identifier, "Expect varaible name.");
-        const name = try Obj.String.copy(self.vm, self.previous.lexeme);
 
+        if (self.compiler.isGlobalScope()) {
+            const name = try Obj.String.copy(self.vm, self.previous.lexeme);
+            try self.varDeclarationInitializer();
+            try self.emitConstant(.DefineGlobal, name.obj.value());
+        } else {
+            const declared = try self.declareLocalVariable(self.previous);
+            if (!declared) return;
+
+            try self.varDeclarationInitializer();
+
+            var local = self.compiler.locals.pop();
+            local.markInitialized();
+            try self.compiler.locals.append(local);
+        }
+    }
+
+    fn varDeclarationInitializer(self: *Parser) !void {
         if (self.match(.Equal)) {
             try self.expression();
         } else {
@@ -137,8 +176,6 @@ pub const Parser = struct {
         }
 
         self.consume(.Semicolon, "Expect ';' after variable declaration.");
-
-        try self.emitOpWithValue(.DefineGlobal, name.obj.value());
     }
 
     fn printStatement(self: *Parser) !void {
@@ -153,9 +190,17 @@ pub const Parser = struct {
         try self.emitOp(.Pop);
     }
 
+    fn block(self: *Parser) !void {
+        while (!self.check(.RightBrace) and !self.check(.Eof)) {
+            try self.declaration();
+        }
+
+        self.consume(.RightBrace, "Expect '}' after block.");
+    }
+
     fn number(self: *Parser) !void {
         if (std.fmt.parseFloat(f64, self.previous.lexeme)) |value| {
-            try self.emitOpWithValue(.Constant, .{ .Number = value });
+            try self.emitConstant(.Constant, .{ .Number = value });
         } else |e| switch (e) {
             error.InvalidCharacter => {
                 self.errorAtPrevious("Could not parse number");
@@ -177,7 +222,7 @@ pub const Parser = struct {
         // Don't include quotes from start/end of string.
         const source = self.previous.lexeme[1 .. self.previous.lexeme.len - 1];
         const value = (try Obj.String.copy(self.vm, source)).obj.value();
-        try self.emitOpWithValue(.Constant, value);
+        try self.emitConstant(.Constant, value);
     }
 
     fn variable(self: *Parser, canAssign: bool) !void {
@@ -185,13 +230,36 @@ pub const Parser = struct {
     }
 
     fn namedVariable(self: *Parser, canAssign: bool) !void {
-        const name = try Obj.String.copy(self.vm, self.previous.lexeme);
+        const token = self.previous;
+
+        var setOp: OpCode = undefined;
+        var getOp: OpCode = undefined;
+        var arg: u8 = undefined;
+
+        const resolvedLocal = self.compiler.resolveLocal(token) catch |err| switch (err) {
+            error.NotYetInitialized => {
+                self.errorAtPrevious("Can't read local variable in its own initializer.");
+                return;
+            },
+        };
+
+        if (resolvedLocal) |local| {
+            setOp = .SetLocal;
+            getOp = .GetLocal;
+            arg = @as(u8, @intCast(local));
+        } else {
+            setOp = .SetGlobal;
+            getOp = .GetGlobal;
+
+            const nameString = try Obj.String.copy(self.vm, token.lexeme);
+            arg = try self.makeConstant(nameString.obj.value());
+        }
 
         if (canAssign and self.match(.Equal)) {
             try self.expression();
-            try self.emitOpWithValue(.SetGlobal, name.obj.value());
+            try self.emitUnaryOp(setOp, arg);
         } else {
-            try self.emitOpWithValue(.GetGlobal, name.obj.value());
+            try self.emitUnaryOp(getOp, arg);
         }
     }
 
@@ -391,7 +459,12 @@ pub const Parser = struct {
         try self.emitOp(.Return);
     }
 
-    fn emitOpWithValue(self: *Parser, op: OpCode, value: Value) !void {
+    fn emitUnaryOp(self: *Parser, op: OpCode, byte: u8) !void {
+        try self.emitOp(op);
+        try self.emitByte(byte);
+    }
+
+    fn emitConstant(self: *Parser, op: OpCode, value: Value) !void {
         try self.emitOp(op);
         try self.emitByte(try self.makeConstant(value));
     }
@@ -404,6 +477,17 @@ pub const Parser = struct {
         }
 
         return @as(u8, @intCast(idx));
+    }
+
+    fn declareLocalVariable(self: *Parser, name: Token) !bool {
+        self.compiler.addLocal(name) catch |err| switch (err) {
+            error.VariableNameUsedInScope => {
+                self.errorAtPrevious("Already a variable with this name in this scope.");
+                return false;
+            },
+            error.OutOfMemory => return error.OutOfMemory,
+        };
+        return true;
     }
 
     fn errorAtCurrent(self: *Parser, message: []const u8) void {

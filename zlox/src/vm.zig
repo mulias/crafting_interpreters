@@ -7,7 +7,7 @@ const Chunk = @import("./chunk.zig").Chunk;
 const OpCode = @import("./chunk.zig").OpCode;
 const Value = @import("./value.zig").Value;
 const printValue = @import("./value.zig").print;
-const compiler = @import("./compiler.zig");
+const Compiler = @import("./compiler.zig").Compiler;
 const logger = @import("./logger.zig");
 const Obj = @import("./object.zig").Obj;
 
@@ -45,10 +45,13 @@ pub const VM = struct {
         var chunk = Chunk.init(self.allocator);
         defer chunk.deinit();
 
+        var compiler = Compiler.init(self);
+        defer compiler.deinit();
+
         self.chunk = &chunk;
         self.ip = 0;
 
-        try compiler.compile(self, source);
+        try compiler.compile(source);
         try self.run();
     }
 
@@ -76,6 +79,14 @@ pub const VM = struct {
             .False => try self.push(.{ .Bool = false }),
             .Pop => {
                 _ = self.pop();
+            },
+            .GetLocal => {
+                const slot = self.readByte();
+                try self.push(self.stack.items[slot]);
+            },
+            .SetLocal => {
+                const slot = self.readByte();
+                self.stack.items[slot] = self.peek(0);
             },
             .GetGlobal => {
                 const nameIdx = self.readByte();
@@ -255,30 +266,94 @@ pub const VM = struct {
     }
 };
 
-test "vm" {
-    var alloc = std.testing.allocator;
-    var vm = VM.init(alloc);
+test "number expression" {
+    var vm = VM.init(std.testing.allocator);
     defer vm.deinit();
-
     try vm.interpret("1 + 1;");
+}
 
+test "print expression" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
     try vm.interpret(
         \\print "st" + "ri" + "ng";
         \\print 1 + 3;
     );
+}
 
+test "global vars" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
     try vm.interpret(
-        \\ var breakfast = "beignets";
-        \\ var beverage = "cafe au lait";
-        \\ breakfast = "beignets with " + beverage;
+        \\var breakfast = "beignets";
+        \\var beverage = "cafe au lait";
+        \\breakfast = "beignets with " + beverage;
         \\
-        \\ print breakfast;
+        \\print breakfast;
     );
+}
 
+test "local vars" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\{
+        \\  var a = 1;
+        \\  {
+        \\    var b = 2;
+        \\    {
+        \\      var c = 3;
+        \\      {
+        \\        var d = 4;
+        \\      }
+        \\      var e = 5;
+        \\    }
+        \\    var f = 6;
+        \\    {
+        \\      var g = 7;
+        \\    }
+        \\  }
+        \\}
+    );
+}
+
+test "print local vars" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\{
+        \\  var y = 2;
+        \\  print y;
+        \\}
+    );
+}
+
+test "global and local vars" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\var x = 1;
+        \\{
+        \\  var y = x + 1;
+        \\  print y;
+        \\}
+        \\x = 2;
+        \\print x;
+    );
+}
+
+test "compiler errors" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
     try std.testing.expectError(error.CompileError, vm.interpret("1 + "));
-    try std.testing.expectError(error.RuntimeError, vm.interpret("1 + true;"));
     try std.testing.expectError(error.CompileError, vm.interpret("a * b = c + d;"));
+}
+
+test "runtime errors" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try std.testing.expectError(error.RuntimeError, vm.interpret("1 + true;"));
     try std.testing.expectError(error.RuntimeError, vm.interpret(
-        \\ foo = 1;
+        \\foo = 1;
     ));
 }
