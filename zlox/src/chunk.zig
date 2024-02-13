@@ -90,63 +90,6 @@ pub const Chunk = struct {
         }
 
         const instruction = OpCode.fromByte(self.code.items[offset]);
-        return switch (instruction) {
-            .Constant,
-            .GetGlobal,
-            .DefineGlobal,
-            .SetGlobal,
-            => self.constantInstruction(instruction, offset),
-            .GetLocal,
-            .SetLocal,
-            => self.byteInstruciton(instruction, offset),
-            .Jump,
-            .JumpIfFalse,
-            => self.jumpInstruction(instruction, 1, offset),
-            .Loop => self.jumpInstruction(instruction, -1, offset),
-            .True,
-            .False,
-            .Pop,
-            .Equal,
-            .Greater,
-            .Less,
-            .Nil,
-            .Add,
-            .Subtract,
-            .Multiply,
-            .Divide,
-            .Not,
-            .Negate,
-            .Print,
-            .Return,
-            => self.simpleInstruction(instruction, offset),
-        };
-    }
-
-    fn simpleInstruction(self: *Chunk, instruction: OpCode, offset: usize) usize {
-        _ = self;
-        logger.debug("{s}\n", .{@tagName(instruction)});
-        return offset + 1;
-    }
-
-    fn constantInstruction(self: *Chunk, instruction: OpCode, offset: usize) usize {
-        var constantIdx = self.get(offset + 1);
-        var constantValue = self.constants.items[constantIdx];
-        logger.debug("{s} {} '", .{ @tagName(instruction), constantIdx });
-        constantValue.print(logger.debug);
-        logger.debug("'\n", .{});
-        return offset + 2;
-    }
-
-    fn byteInstruciton(self: *Chunk, instruction: OpCode, offset: usize) usize {
-        const slot = self.get(offset + 1);
-        logger.debug("{s} {d}\n", .{ @tagName(instruction), slot });
-        return offset + 2;
-    }
-
-    fn jumpInstruction(self: *Chunk, instruction: OpCode, sign: isize, offset: usize) usize {
-        const jump = self.getShort(offset + 1);
-        const target = @as(isize, @intCast(offset)) + 3 + sign * jump;
-        logger.debug("{s} {d} -> {d}\n", .{ @tagName(instruction), offset, target });
-        return offset + 3;
+        return instruction.disassemble(self, offset);
     }
 };
