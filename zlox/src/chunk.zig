@@ -106,13 +106,13 @@ pub const Chunk = struct {
         };
     }
 
-    pub fn simpleInstruction(self: *Chunk, instruction: OpCode, offset: usize) usize {
+    fn simpleInstruction(self: *Chunk, instruction: OpCode, offset: usize) usize {
         _ = self;
         logger.debug("{s}\n", .{@tagName(instruction)});
         return offset + 1;
     }
 
-    pub fn constantInstruction(self: *Chunk, instruction: OpCode, offset: usize) usize {
+    fn constantInstruction(self: *Chunk, instruction: OpCode, offset: usize) usize {
         var constantIdx = self.code.items[offset + 1];
         var constantValue = self.constants.items[constantIdx];
         logger.debug("{s} {} '", .{ @tagName(instruction), constantIdx });
