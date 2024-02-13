@@ -116,11 +116,13 @@ pub const Parser = struct {
         if (self.panicMode) self.syncronize();
     }
 
-    pub fn statement(self: *Parser) !void {
+    pub fn statement(self: *Parser) ParserError!void {
         if (self.match(.Print)) {
             try self.printStatement();
         } else if (self.match(.If)) {
             try self.ifStatement();
+        } else if (self.match(.While)) {
+            try self.whileStatement();
         } else if (self.match(.LeftBrace)) {
             self.beginScope();
             try self.block();
@@ -214,6 +216,22 @@ pub const Parser = struct {
 
         // Patch the else jump, now that we know where the else branch ends
         self.patchJump(elseJumpIndex);
+    }
+
+    fn whileStatement(self: *Parser) !void {
+        const loopStart = self.chunk().byteCount();
+
+        self.consume(.LeftParen, "Expect '(' after 'while'.");
+        try self.expression();
+        self.consume(.RightParen, "Expect ')' after condition.");
+
+        const exitJumpIndex = try self.emitJump(.JumpIfFalse);
+        try self.emitOp(.Pop);
+        try self.statement();
+        try self.emitLoop(loopStart);
+
+        self.patchJump(exitJumpIndex);
+        try self.emitOp(.Pop);
     }
 
     fn expressionStatement(self: *Parser) !void {
@@ -479,6 +497,17 @@ pub const Parser = struct {
     fn emitConstant(self: *Parser, op: OpCode, value: Value) !void {
         try self.emitOp(op);
         try self.emitByte(try self.makeConstant(value));
+    }
+
+    fn emitLoop(self: *Parser, loopStart: usize) !void {
+        try self.emitOp(.Loop);
+
+        const offset = self.chunk().byteCount() - loopStart + 2;
+        if (offset > std.math.maxInt(u16)) {
+            self.errorAtPrevious("Loop body too large.");
+        }
+
+        try self.chunk().writeShort(@as(u16, @intCast(offset)), self.previous.line);
     }
 
     fn emitJump(self: *Parser, op: OpCode) !usize {

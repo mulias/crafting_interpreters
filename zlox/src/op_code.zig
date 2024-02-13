@@ -21,6 +21,7 @@ pub const OpCode = enum(u8) {
     Print,
     Jump,
     JumpIfFalse,
+    Loop,
     Return,
 
     pub fn toByte(op: OpCode) u8 {

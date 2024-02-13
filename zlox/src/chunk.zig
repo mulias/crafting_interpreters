@@ -45,6 +45,11 @@ pub const Chunk = struct {
         try self.write(op.toByte(), line);
     }
 
+    pub fn writeShort(self: *Chunk, value: u16, line: u32) !void {
+        try self.write(@as(u8, @intCast((value >> 8) & 0xff)), line);
+        try self.write(@as(u8, @intCast(value & 0xff)), line);
+    }
+
     pub fn update(self: *Chunk, idx: usize, value: u8) void {
         self.code.items[idx] = value;
     }
@@ -97,6 +102,7 @@ pub const Chunk = struct {
             .Jump,
             .JumpIfFalse,
             => self.jumpInstruction(instruction, 1, offset),
+            .Loop => self.jumpInstruction(instruction, -1, offset),
             .True,
             .False,
             .Pop,
