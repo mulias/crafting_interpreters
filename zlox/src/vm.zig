@@ -154,7 +154,7 @@ pub const VM = struct {
             .Subtract => return try self.binaryNumericOp(sub),
             .Multiply => return try self.binaryNumericOp(mul),
             .Divide => return try self.binaryNumericOp(div),
-            .Not => try self.push(.{ .Bool = isFalsey(self.pop()) }),
+            .Not => try self.push(.{ .Bool = self.pop().isFalsey() }),
             .Negate => {
                 if (self.peek(0).isNumber()) {
                     const n = self.pop().asNumber();
@@ -167,16 +167,16 @@ pub const VM = struct {
                 self.pop().print(logger.info);
                 logger.info("\n", .{});
             },
+            .Jump => {
+                const offset = self.readShort();
+                self.ip += offset;
+            },
+            .JumpIfFalse => {
+                const offset = self.readShort();
+                if (self.peek(0).isFalsey()) self.ip += offset;
+            },
             .Return => {},
         }
-    }
-
-    fn isFalsey(value: Value) bool {
-        return switch (value) {
-            .Bool => |b| !b,
-            .Nil => true,
-            else => false,
-        };
     }
 
     fn add(x: f64, y: f64) f64 {
@@ -225,6 +225,12 @@ pub const VM = struct {
         const op = self.chunk.getOp(self.ip);
         self.ip += 1;
         return op;
+    }
+
+    fn readShort(self: *VM) u16 {
+        const short = self.chunk.getShort(self.ip);
+        self.ip += 2;
+        return short;
     }
 
     fn push(self: *VM, value: Value) !void {
@@ -345,6 +351,50 @@ test "global and local vars" {
         \\}
         \\x = 2;
         \\print x;
+    );
+}
+
+test "if when true" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\if (true) print 1;
+        \\print 2;
+    );
+}
+
+test "if when false" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\if (false) print 1;
+        \\print 2;
+    );
+}
+
+test "if/else when true" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\var x = 1;
+        \\if (x == 1) {
+        \\  print 1;
+        \\} else {
+        \\  print 2;
+        \\}
+    );
+}
+
+test "if/else when false" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\var x = 1;
+        \\if (x == 2) {
+        \\  print 1;
+        \\} else {
+        \\  print 2;
+        \\}
     );
 }
 

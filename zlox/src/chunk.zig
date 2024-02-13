@@ -32,6 +32,10 @@ pub const Chunk = struct {
         return OpCode.fromByte(self.get(offset));
     }
 
+    pub fn getShort(self: *Chunk, offset: usize) u16 {
+        return (@as(u16, @intCast(self.code.items[offset])) << 8) | self.code.items[offset + 1];
+    }
+
     pub fn write(self: *Chunk, byte: u8, line: u32) !void {
         try self.code.append(byte);
         try self.lines.append(line);
@@ -39,6 +43,15 @@ pub const Chunk = struct {
 
     pub fn writeOp(self: *Chunk, op: OpCode, line: u32) !void {
         try self.write(op.toByte(), line);
+    }
+
+    pub fn update(self: *Chunk, idx: usize, value: u8) void {
+        self.code.items[idx] = value;
+    }
+
+    pub fn updateShort(self: *Chunk, idx: usize, value: u16) void {
+        self.update(idx, @as(u8, @intCast((value >> 8) & 0xff)));
+        self.update(idx + 1, @as(u8, @intCast(value & 0xff)));
     }
 
     pub fn addConstant(self: *Chunk, value: Value) !u9 {
@@ -81,6 +94,9 @@ pub const Chunk = struct {
             .GetLocal,
             .SetLocal,
             => self.byteInstruciton(instruction, offset),
+            .Jump,
+            .JumpIfFalse,
+            => self.jumpInstruction(instruction, 1, offset),
             .True,
             .False,
             .Pop,
@@ -119,5 +135,12 @@ pub const Chunk = struct {
         const slot = self.get(offset + 1);
         logger.debug("{s} {d}\n", .{ @tagName(instruction), slot });
         return offset + 2;
+    }
+
+    fn jumpInstruction(self: *Chunk, instruction: OpCode, sign: isize, offset: usize) usize {
+        const jump = self.getShort(offset + 1);
+        const target = @as(isize, @intCast(offset)) + 3 + sign * jump;
+        logger.debug("{s} {d} -> {d}\n", .{ @tagName(instruction), offset, target });
+        return offset + 3;
     }
 };

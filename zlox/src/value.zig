@@ -42,6 +42,14 @@ pub const Value = union(ValueType) {
         }
     }
 
+    pub fn isFalsey(self: Value) bool {
+        return switch (self) {
+            .Bool => |b| !b,
+            .Nil => true,
+            else => false,
+        };
+    }
+
     pub fn isNumber(self: Value) bool {
         switch (self) {
             .Number => return true,

@@ -119,6 +119,8 @@ pub const Parser = struct {
     pub fn statement(self: *Parser) !void {
         if (self.match(.Print)) {
             try self.printStatement();
+        } else if (self.match(.If)) {
+            try self.ifStatement();
         } else if (self.match(.LeftBrace)) {
             self.beginScope();
             try self.block();
@@ -182,6 +184,36 @@ pub const Parser = struct {
         try self.expression();
         self.consume(.Semicolon, "Expect ';' after value.");
         try self.emitOp(.Print);
+    }
+
+    fn ifStatement(self: *Parser) ParserError!void {
+        self.consume(.LeftParen, "Expect '(' after 'if'.");
+        try self.expression();
+        self.consume(.RightParen, "Expect ')' after condition.");
+
+        // Jump over if branch when falsey
+        const jumpIndex = try self.emitJump(.JumpIfFalse);
+
+        // Remove jump test value when truthy
+        try self.emitOp(.Pop);
+
+        // Parse if branch
+        try self.statement();
+
+        // Jump over else branch when truthy
+        const elseJumpIndex = try self.emitJump(.Jump);
+
+        // Patch the if jump, now that we know where the if branch ends
+        try self.patchJump(jumpIndex);
+
+        // Remove jump test value when falsey
+        try self.emitOp(.Pop);
+
+        // Parse else branch
+        if (self.match(.Else)) try self.statement();
+
+        // Patch the else jump, now that we know where the else branch ends
+        try self.patchJump(elseJumpIndex);
     }
 
     fn expressionStatement(self: *Parser) !void {
@@ -467,6 +499,27 @@ pub const Parser = struct {
     fn emitConstant(self: *Parser, op: OpCode, value: Value) !void {
         try self.emitOp(op);
         try self.emitByte(try self.makeConstant(value));
+    }
+
+    fn emitJump(self: *Parser, op: OpCode) !usize {
+        try self.emitOp(op);
+        // Dummy operands that will be patched later
+        try self.emitByte(0xff);
+        try self.emitByte(0xff);
+        return self.chunk().byteCount() - 2;
+    }
+
+    fn patchJump(self: *Parser, offset: usize) !void {
+        std.debug.assert(self.chunk().get(offset) == 0xff);
+        std.debug.assert(self.chunk().get(offset + 1) == 0xff);
+
+        const jump = self.chunk().byteCount() - offset - 2;
+
+        if (jump > std.math.maxInt(u16)) {
+            self.errorAtPrevious("Too much code to jump over.");
+        }
+
+        self.chunk().updateShort(offset, @as(u16, @intCast(jump)));
     }
 
     fn makeConstant(self: *Parser, value: Value) !u8 {
