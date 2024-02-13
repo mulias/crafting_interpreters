@@ -204,7 +204,7 @@ pub const Parser = struct {
         const elseJumpIndex = try self.emitJump(.Jump);
 
         // Patch the if jump, now that we know where the if branch ends
-        try self.patchJump(jumpIndex);
+        self.patchJump(jumpIndex);
 
         // Remove jump test value when falsey
         try self.emitOp(.Pop);
@@ -213,7 +213,7 @@ pub const Parser = struct {
         if (self.match(.Else)) try self.statement();
 
         // Patch the else jump, now that we know where the else branch ends
-        try self.patchJump(elseJumpIndex);
+        self.patchJump(elseJumpIndex);
     }
 
     fn expressionStatement(self: *Parser) !void {
@@ -338,6 +338,26 @@ pub const Parser = struct {
         }
     }
 
+    fn and_(self: *Parser) !void {
+        const endJumpIndex = try self.emitJump(.JumpIfFalse);
+
+        try self.emitOp(.Pop);
+        try self.parsePrecedence(.And);
+
+        self.patchJump(endJumpIndex);
+    }
+
+    fn or_(self: *Parser) !void {
+        const elseJumpIndex = try self.emitJump(.JumpIfFalse);
+        const endJumpIndex = try self.emitJump(.Jump);
+
+        self.patchJump(elseJumpIndex);
+        try self.emitOp(.Pop);
+
+        try self.parsePrecedence(.Or);
+        self.patchJump(endJumpIndex);
+    }
+
     fn parsePrecedence(self: *Parser, precedence: Precedence) ParserError!void {
         self.advance();
 
@@ -357,56 +377,14 @@ pub const Parser = struct {
 
     fn tokenPrecedence(tokenType: TokenType) Precedence {
         return switch (tokenType) {
-            .RightParen,
-            .LeftBrace,
-            .RightBrace,
-            .Comma,
-            .Bang,
-            .BangEqual,
-            .Equal,
-            .Semicolon,
-            .Identifier,
-            .String,
-            .Number,
-            .And,
-            .Class,
-            .Else,
-            .False,
-            .For,
-            .Fun,
-            .If,
-            .Nil,
-            .Or,
-            .Print,
-            .Return,
-            .Super,
-            .This,
-            .True,
-            .Var,
-            .While,
-            .Error,
-            .Eof,
-            => .None,
-
-            .EqualEqual => .Equality,
-
-            .Greater,
-            .GreaterEqual,
-            .Less,
-            .LessEqual,
-            => .Comparison,
-
-            .LeftParen,
-            .Dot,
-            => .Call,
-
-            .Minus,
-            .Plus,
-            => .Term,
-
-            .Slash,
-            .Star,
-            => .Factor,
+            .LeftParen, .Dot => .Call,
+            .Slash, .Star => .Factor,
+            .Minus, .Plus => .Term,
+            .Greater, .GreaterEqual, .Less, .LessEqual => .Comparison,
+            .BangEqual, .EqualEqual => .Equality,
+            .And => .And,
+            .Or => .Or,
+            else => .None,
         };
     }
 
@@ -467,7 +445,9 @@ pub const Parser = struct {
             .Identifier, .String, .Number => {},
 
             // Keywords.
-            .And, .Class, .Else, .False, .For, .Fun, .If, .Nil, .Or => {},
+            .And => return self.and_(),
+            .Or => return self.or_(),
+            .Class, .Else, .False, .For, .Fun, .If, .Nil => {},
             .Print, .Return, .Super, .This, .True, .Var, .While, .Error => {},
             .Eof => {},
         }
@@ -509,7 +489,7 @@ pub const Parser = struct {
         return self.chunk().byteCount() - 2;
     }
 
-    fn patchJump(self: *Parser, offset: usize) !void {
+    fn patchJump(self: *Parser, offset: usize) void {
         std.debug.assert(self.chunk().get(offset) == 0xff);
         std.debug.assert(self.chunk().get(offset + 1) == 0xff);
 

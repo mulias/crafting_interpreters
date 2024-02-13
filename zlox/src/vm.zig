@@ -398,6 +398,36 @@ test "if/else when false" {
     );
 }
 
+test "and" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\var a = true and true;
+        \\var b = true and false;
+        \\var c = false and true;
+        \\var d = false and false;
+        \\print a;
+        \\print b;
+        \\print c;
+        \\print d;
+    );
+}
+
+test "or" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\var a = true or true;
+        \\var b = true or false;
+        \\var c = false or true;
+        \\var d = false or false;
+        \\print a;
+        \\print b;
+        \\print c;
+        \\print d;
+    );
+}
+
 test "compiler errors" {
     var vm = VM.init(std.testing.allocator);
     defer vm.deinit();
