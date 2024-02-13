@@ -1,6 +1,6 @@
 const std = @import("std");
-const logger = @import("./logger.zig");
 const Obj = @import("./object.zig").Obj;
+const logger = @import("./logger.zig");
 
 pub const ValueError = error{
     UnexpectedType,

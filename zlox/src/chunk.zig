@@ -1,9 +1,9 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
+const OpCode = @import("./op_code.zig").OpCode;
 const Value = @import("./value.zig").Value;
 const logger = @import("./logger.zig");
-const OpCode = @import("./op_code.zig").OpCode;
 
 pub const Chunk = struct {
     code: ArrayList(u8),

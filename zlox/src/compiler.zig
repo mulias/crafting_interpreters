@@ -1,12 +1,12 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
-const Scanner = @import("./scanner.zig").Scanner;
 const Parser = @import("./parser.zig").Parser;
+const Scanner = @import("./scanner.zig").Scanner;
 const Token = @import("./token.zig").Token;
 const TokenType = @import("./token.zig").TokenType;
-const logger = @import("./logger.zig");
 const VM = @import("./vm.zig").VM;
+const logger = @import("./logger.zig");
 
 pub const Compiler = struct {
     vm: *VM,

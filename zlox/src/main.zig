@@ -1,8 +1,8 @@
 const std = @import("std");
-const OpCode = @import("./chunk.zig").OpCode;
-const Chunk = @import("./chunk.zig").Chunk;
-const VM = @import("./vm.zig").VM;
 const Allocator = std.mem.Allocator;
+const Chunk = @import("./chunk.zig").Chunk;
+const OpCode = @import("./chunk.zig").OpCode;
+const VM = @import("./vm.zig").VM;
 const logger = @import("./logger.zig");
 
 pub fn main() !void {

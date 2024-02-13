@@ -1,15 +1,15 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
-const StringHashMap = std.StringHashMap;
 const AutoHashMap = std.AutoHashMap;
 const Chunk = @import("./chunk.zig").Chunk;
-const OpCode = @import("./op_code.zig").OpCode;
-const Value = @import("./value.zig").Value;
-const printValue = @import("./value.zig").print;
 const Compiler = @import("./compiler.zig").Compiler;
-const logger = @import("./logger.zig");
 const Obj = @import("./object.zig").Obj;
+const OpCode = @import("./op_code.zig").OpCode;
+const StringHashMap = std.StringHashMap;
+const Value = @import("./value.zig").Value;
+const logger = @import("./logger.zig");
+const printValue = @import("./value.zig").print;
 
 const debugTraceExecution = true;
 

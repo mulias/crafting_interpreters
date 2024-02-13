@@ -1,14 +1,14 @@
 const std = @import("std");
-const Scanner = @import("scanner.zig").Scanner;
 const Chunk = @import("./chunk.zig").Chunk;
+const Compiler = @import("./compiler.zig").Compiler;
+const Obj = @import("./object.zig").Obj;
 const OpCode = @import("./op_code.zig").OpCode;
+const Scanner = @import("scanner.zig").Scanner;
 const Token = @import("./token.zig").Token;
 const TokenType = @import("./token.zig").TokenType;
-const logger = @import("./logger.zig");
-const Value = @import("./value.zig").Value;
-const Obj = @import("./object.zig").Obj;
 const VM = @import("./vm.zig").VM;
-const Compiler = @import("./compiler.zig").Compiler;
+const Value = @import("./value.zig").Value;
+const logger = @import("./logger.zig");
 
 pub const Precedence = enum(u8) {
     None,

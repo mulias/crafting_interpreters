@@ -1,5 +1,3 @@
-const std = @import("std");
-
 pub const TokenType = enum {
     // Single-character tokens
     LeftParen,
