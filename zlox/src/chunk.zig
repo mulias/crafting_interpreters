@@ -3,30 +3,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Value = @import("./value.zig").Value;
 const logger = @import("./logger.zig");
-
-pub const OpCode = enum(u8) {
-    Constant,
-    Nil,
-    True,
-    False,
-    Pop,
-    GetLocal,
-    SetLocal,
-    GetGlobal,
-    DefineGlobal,
-    SetGlobal,
-    Equal,
-    Greater,
-    Less,
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
-    Not,
-    Negate,
-    Print,
-    Return,
-};
+const OpCode = @import("./op_code.zig").OpCode;
 
 pub const Chunk = struct {
     code: ArrayList(u8),
@@ -53,7 +30,7 @@ pub const Chunk = struct {
     }
 
     pub fn writeOp(self: *Chunk, op: OpCode, line: u32) !void {
-        try self.write(@intFromEnum(op), line);
+        try self.write(op.toByte(), line);
     }
 
     pub fn addConstant(self: *Chunk, value: Value) !u9 {
@@ -82,7 +59,7 @@ pub const Chunk = struct {
             logger.debug("{: >4} ", .{self.lines.items[offset]});
         }
 
-        const instruction = @as(OpCode, @enumFromInt(self.code.items[offset]));
+        const instruction = OpCode.fromByte(self.code.items[offset]);
         return switch (instruction) {
             .Constant,
             .GetGlobal,
