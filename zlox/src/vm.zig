@@ -62,7 +62,7 @@ pub const VM = struct {
                 _ = self.chunk.disassembleInstruction(self.ip);
             }
 
-            const opCode = @as(OpCode, @enumFromInt(self.readByte()));
+            const opCode = self.readOp();
             try self.runOp(opCode);
             if (opCode == .Return and self.stack.items.len == 0) break;
         }
@@ -216,9 +216,15 @@ pub const VM = struct {
     }
 
     fn readByte(self: *VM) u8 {
-        const byte = self.chunk.code.items[self.ip];
+        const byte = self.chunk.get(self.ip);
         self.ip += 1;
         return byte;
+    }
+
+    fn readOp(self: *VM) OpCode {
+        const op = self.chunk.getOp(self.ip);
+        self.ip += 1;
+        return op;
     }
 
     fn push(self: *VM, value: Value) !void {

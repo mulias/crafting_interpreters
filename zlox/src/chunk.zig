@@ -24,6 +24,14 @@ pub const Chunk = struct {
         self.lines.deinit();
     }
 
+    pub fn get(self: *Chunk, offset: usize) u8 {
+        return self.code.items[offset];
+    }
+
+    pub fn getOp(self: *Chunk, offset: usize) OpCode {
+        return OpCode.fromByte(self.get(offset));
+    }
+
     pub fn write(self: *Chunk, byte: u8, line: u32) !void {
         try self.code.append(byte);
         try self.lines.append(line);
@@ -39,11 +47,15 @@ pub const Chunk = struct {
         return idx;
     }
 
+    pub fn byteCount(self: *Chunk) usize {
+        return self.code.items.len;
+    }
+
     pub fn disassemble(self: *Chunk, name: []const u8) void {
         logger.debug("== {s} ==\n", .{name});
 
         var offset: usize = 0;
-        while (offset < self.code.items.len) {
+        while (offset < self.byteCount()) {
             offset = self.disassembleInstruction(offset);
         }
     }
@@ -95,7 +107,7 @@ pub const Chunk = struct {
     }
 
     fn constantInstruction(self: *Chunk, instruction: OpCode, offset: usize) usize {
-        var constantIdx = self.code.items[offset + 1];
+        var constantIdx = self.get(offset + 1);
         var constantValue = self.constants.items[constantIdx];
         logger.debug("{s} {} '", .{ @tagName(instruction), constantIdx });
         constantValue.print(logger.debug);
@@ -104,7 +116,7 @@ pub const Chunk = struct {
     }
 
     fn byteInstruciton(self: *Chunk, instruction: OpCode, offset: usize) usize {
-        const slot = self.code.items[offset + 1];
+        const slot = self.get(offset + 1);
         logger.debug("{s} {d}\n", .{ @tagName(instruction), slot });
         return offset + 2;
     }
