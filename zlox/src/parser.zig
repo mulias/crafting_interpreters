@@ -309,7 +309,7 @@ pub const Parser = struct {
     fn parsePrecedence(self: *Parser, precedence: Precedence) ParserError!void {
         self.advance();
 
-        const canAssign = @intFromEnum(precedence) <= @intFromEnum(Precedence.Assignment);
+        const canAssign = !precedence.isGreaterThan(Precedence.Assignment);
 
         try self.parseAsPrefix(self.previous.tokenType, canAssign);
 
