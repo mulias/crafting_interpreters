@@ -123,6 +123,8 @@ pub const Parser = struct {
             try self.ifStatement();
         } else if (self.match(.While)) {
             try self.whileStatement();
+        } else if (self.match(.For)) {
+            try self.forStatement();
         } else if (self.match(.LeftBrace)) {
             self.beginScope();
             try self.block();
@@ -232,6 +234,89 @@ pub const Parser = struct {
 
         self.patchJump(exitJumpIndex);
         try self.emitOp(.Pop);
+    }
+
+    fn forStatement(self: *Parser) !void {
+        // Scope for optional initializer var.
+        self.beginScope();
+
+        self.consume(.LeftParen, "Expect '(' after 'for'.");
+
+        // Optional initializer.
+        if (self.match(.Semicolon)) {
+            // No initializer
+        } else if (self.match(.Var)) {
+            try self.varDeclaration();
+        } else {
+            try self.expressionStatement();
+        }
+
+        // Mark the start of the loop, after the initializer and before the
+        // condition, body, and increment.
+        var startLoopIndex = self.chunk().byteCount();
+
+        // Null if there is no condition expression, otherwise the index of the
+        // jump op to get out of the loop when the condition is false.
+        var exitJumpIndex: ?usize = null;
+
+        // Null if there is no increment expression, otherwise the index to
+        // loop back to after the body is executed.
+        var incrementLoopIndex: ?usize = null;
+
+        // Optional condition.
+        if (!self.match(.Semicolon)) {
+            try self.expression();
+            self.consume(.Semicolon, "Expect ';' after loop condition.");
+
+            // Jump out of the loop if the condition is false.
+            exitJumpIndex = try self.emitJump(.JumpIfFalse);
+            try self.emitOp(.Pop);
+        }
+
+        // Optional increment.
+        if (!self.match(.RightParen)) {
+            // Jump to skip over the increment and execute the body, before
+            // looping back to the increment.
+            const bodyJumpIndex = try self.emitJump(.Jump);
+
+            // Mark the increment expression, we loop back here after the body.
+            incrementLoopIndex = self.chunk().byteCount();
+
+            try self.expression();
+            try self.emitOp(.Pop);
+            self.consume(.RightParen, "Expect ')' after for clauses.");
+
+            // After the increment go to the start of the loop.
+            try self.emitLoop(startLoopIndex);
+
+            // This is the end of the increment expression, so we jump here to
+            // get to the body.
+            self.patchJump(bodyJumpIndex);
+        }
+
+        // The for loop body.
+        try self.statement();
+
+        // Loop back to either the increment, or the start of the loop if there
+        // is no increment.
+        if (incrementLoopIndex) |index| {
+            // Loop back to the increment, which will then loop back to the
+            // loop start.
+            try self.emitLoop(index);
+        } else {
+            // No increment, go to loop start.
+            try self.emitLoop(startLoopIndex);
+        }
+
+        // We are now out of the loop, if there was a loop condition then we
+        // update the exit jump op to point here.
+        if (exitJumpIndex) |index| {
+            self.patchJump(index);
+            try self.emitOp(.Pop);
+        }
+
+        // Clear initializer
+        try self.endScope();
     }
 
     fn expressionStatement(self: *Parser) !void {

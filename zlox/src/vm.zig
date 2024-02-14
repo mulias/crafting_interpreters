@@ -445,6 +445,17 @@ test "while" {
     );
 }
 
+test "for loop" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\for (var i = 0; i < 10; i = i + 1) {
+        \\  print i;
+        \\}
+        \\print "done";
+    );
+}
+
 test "compiler errors" {
     var vm = VM.init(std.testing.allocator);
     defer vm.deinit();
