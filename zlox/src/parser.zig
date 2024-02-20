@@ -136,7 +136,11 @@ pub const Parser = struct {
 
     pub fn end(self: *Parser) !void {
         try self.emitReturn();
-        if (!self.hadError) self.chunk().disassemble("code");
+
+        if (!self.hadError) {
+            const label = self.compiler.function.getName();
+            self.chunk().disassemble(label);
+        }
     }
 
     fn beginScope(self: *Parser) void {
@@ -559,7 +563,7 @@ pub const Parser = struct {
     }
 
     fn chunk(self: *Parser) *Chunk {
-        return self.vm.chunk;
+        return &self.compiler.function.chunk;
     }
 
     fn emitByte(self: *Parser, byte: u8) !void {

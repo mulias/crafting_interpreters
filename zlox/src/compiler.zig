@@ -1,6 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
+const Obj = @import("./object.zig").Obj;
 const Parser = @import("./parser.zig").Parser;
 const Scanner = @import("./scanner.zig").Scanner;
 const Token = @import("./token.zig").Token;
@@ -12,12 +13,14 @@ pub const Compiler = struct {
     vm: *VM,
     locals: ArrayList(Local),
     scopeDepth: usize,
+    function: *Obj.Function,
 
     pub fn init(vm: *VM) Compiler {
         return Compiler{
             .vm = vm,
             .locals = ArrayList(Local).init(vm.allocator),
             .scopeDepth = 0,
+            .function = undefined,
         };
     }
 
@@ -25,7 +28,20 @@ pub const Compiler = struct {
         self.locals.deinit();
     }
 
-    pub fn compile(self: *Compiler, source: []const u8) !void {
+    pub fn compile(self: *Compiler, source: []const u8) !*Obj.Function {
+        // Stack slot 0 is reserved by the VM for the main function. This means
+        // we can't store a local in this position. Create a placeholder local
+        // which is never referenced so that locals on the stack are offset by
+        // 1.
+        try self.locals.append(Local{
+            .depth = 0,
+            .name = undefined,
+            .initialized = true,
+        });
+
+        // Implicit main function for the script as a whole.
+        self.function = try Obj.Function.create(self.vm, .Script);
+
         var parser = Parser.init(self, source);
 
         parser.advance();
@@ -39,6 +55,8 @@ pub const Compiler = struct {
         try parser.end();
 
         if (parser.hadError) return error.CompileError;
+
+        return self.function;
     }
 
     pub fn incScope(self: *Compiler) void {

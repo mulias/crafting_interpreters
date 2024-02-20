@@ -1,4 +1,5 @@
 const std = @import("std");
+const Chunk = @import("./chunk.zig").Chunk;
 const VM = @import("./vm.zig").VM;
 const Value = @import("./value.zig").Value;
 
@@ -8,6 +9,7 @@ pub const Obj = struct {
 
     pub const Type = enum(u8) {
         String,
+        Function,
     };
 
     pub fn allocate(vm: *VM, comptime T: type, objType: Type) !*Obj {
@@ -25,11 +27,19 @@ pub const Obj = struct {
     pub fn destroy(self: *Obj, vm: *VM) void {
         switch (self.objType) {
             .String => self.asString().destroy(vm),
+            .Function => self.asFunction().destroy(vm),
         }
     }
 
     pub fn value(self: *Obj) Value {
         return Value{ .Obj = self };
+    }
+
+    pub fn print(self: *Obj, printer: anytype) void {
+        switch (self.objType) {
+            .String => printer("{s}", .{self.asString().bytes}),
+            .Function => printer("<fn {s}>", .{self.asFunction().getName()}),
+        }
     }
 
     pub fn isEql(a: *Obj, b: *Obj) bool {
@@ -47,6 +57,14 @@ pub const Obj = struct {
 
     pub fn asString(self: *Obj) *String {
         return @fieldParentPtr(String, "obj", self);
+    }
+
+    pub fn isFunction(self: *Obj) bool {
+        return self.objType == .Function;
+    }
+
+    pub fn asFunction(self: *Obj) *Function {
+        return @fieldParentPtr(Function, "obj", self);
     }
 
     pub const String = struct {
@@ -77,6 +95,44 @@ pub const Obj = struct {
         pub fn destroy(self: *String, vm: *VM) void {
             vm.allocator.free(self.bytes);
             vm.allocator.destroy(self);
+        }
+    };
+
+    pub const Function = struct {
+        obj: Obj,
+        arity: u8,
+        chunk: Chunk,
+        name: *String,
+        functionType: FunctionType,
+
+        pub const FunctionType = enum { Function, Script };
+
+        pub fn create(vm: *VM, functionType: FunctionType) !*Function {
+            const obj = try Obj.allocate(vm, Function, .Function);
+            const function = obj.asFunction();
+            function.chunk = Chunk.init(vm.allocator);
+            function.functionType = functionType;
+
+            return function;
+        }
+
+        pub fn destroy(self: *Function, vm: *VM) void {
+            // The `name` string is owned by the VM and might live beyond the
+            // function.
+            self.chunk.deinit();
+            vm.allocator.destroy(self);
+        }
+
+        pub fn isScript(self: *Function) bool {
+            return self.functionType == .Script;
+        }
+
+        pub fn getName(self: *Function) []const u8 {
+            if (self.isScript()) {
+                return "script";
+            } else {
+                return self.name.bytes;
+            }
         }
     };
 };

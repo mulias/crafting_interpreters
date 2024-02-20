@@ -24,7 +24,7 @@ pub const Value = union(ValueType) {
             .Bool => |b| printer("{}", .{b}),
             .Number => |n| printer("{d}", .{n}),
             .Nil => printer("nil", .{}),
-            .Obj => |o| printer("{s}", .{o.asString().bytes}),
+            .Obj => |o| o.print(printer),
         }
     }
 
