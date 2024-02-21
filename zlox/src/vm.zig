@@ -144,7 +144,7 @@ pub const VM = struct {
 
                 if (lhs.isNumber() and rhs.isNumber()) {
                     try self.push(.{ .Number = lhs.asNumber() + rhs.asNumber() });
-                } else if (rhs.isObj() and lhs.isObj() and rhs.asObj().isString() and lhs.asObj().isString()) {
+                } else if (rhs.isObj() and lhs.isObj() and rhs.asObj().isType(.String) and lhs.asObj().isType(.String)) {
                     try self.concatenate(lhs.asObj().asString(), rhs.asObj().asString());
                 } else {
                     return self.runtimeError("Operands must be numbers or strings.", .{});
@@ -255,7 +255,7 @@ pub const VM = struct {
     }
 
     fn callValue(self: *VM, value: Value, argCount: u8) !void {
-        if (value.isObj() and value.asObj().isFunction()) {
+        if (value.isObj() and value.asObj().isType(.Function)) {
             const fun = value.asObj().asFunction();
 
             if (fun.arity == argCount) {

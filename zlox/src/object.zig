@@ -43,7 +43,7 @@ pub const Obj = struct {
     }
 
     pub fn isEql(a: *Obj, b: *Obj) bool {
-        if (a.isString() and b.isString()) {
+        if (a.isType(.String) and b.isType(.String)) {
             // Strings are interned so they can be compared by address
             return a == b;
         } else {
@@ -51,16 +51,12 @@ pub const Obj = struct {
         }
     }
 
-    pub fn isString(self: *Obj) bool {
-        return self.objType == .String;
+    pub fn isType(self: *Obj, objType: Type) bool {
+        return self.objType == objType;
     }
 
     pub fn asString(self: *Obj) *String {
         return @fieldParentPtr(String, "obj", self);
-    }
-
-    pub fn isFunction(self: *Obj) bool {
-        return self.objType == .Function;
     }
 
     pub fn asFunction(self: *Obj) *Function {
