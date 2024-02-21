@@ -7,7 +7,7 @@ pub const Obj = struct {
     objType: Type,
     next: ?*Obj,
 
-    pub const Type = enum(u8) {
+    pub const Type = enum {
         String,
         Function,
     };
@@ -71,25 +71,27 @@ pub const Obj = struct {
         obj: Obj,
         bytes: []const u8,
 
-        pub fn copy(vm: *VM, bytes: []const u8) !*String {
-            const interned = vm.strings.get(bytes);
-            if (interned) |s| return s;
-
-            const buffer = try vm.allocator.alloc(u8, bytes.len);
-            std.mem.copy(u8, buffer, bytes);
+        pub fn copy(vm: *VM, source: []const u8) !*String {
+            const buffer = try vm.allocator.alloc(u8, source.len);
+            std.mem.copy(u8, buffer, source);
             return String.create(vm, buffer);
         }
 
         pub fn create(vm: *VM, bytes: []const u8) !*String {
-            const obj = try Obj.allocate(vm, String, .String);
-            const string = obj.asString();
+            if (vm.strings.get(bytes)) |interned| {
+                vm.allocator.free(bytes);
+                return interned;
+            } else {
+                const obj = try Obj.allocate(vm, String, .String);
+                const string = obj.asString();
 
-            string.bytes = bytes;
+                string.bytes = bytes;
 
-            // Intern string
-            try vm.strings.put(bytes, string);
+                // Intern string
+                try vm.strings.put(bytes, string);
 
-            return string;
+                return string;
+            }
         }
 
         pub fn destroy(self: *String, vm: *VM) void {
