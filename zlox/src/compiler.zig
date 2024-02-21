@@ -9,54 +9,59 @@ const TokenType = @import("./token.zig").TokenType;
 const VM = @import("./vm.zig").VM;
 const logger = @import("./logger.zig");
 
+pub fn compile(vm: *VM, source: []const u8) !*Obj.Function {
+    var compiler = try Compiler.init(vm, .Script, null);
+    defer compiler.deinit();
+
+    var parser = Parser.init(&compiler, source);
+
+    parser.advance();
+
+    while (!parser.match(TokenType.Eof)) {
+        try parser.declaration();
+    }
+
+    parser.consume(TokenType.Eof, "Expect end of expression.");
+
+    try parser.end();
+
+    if (parser.hadError) return error.CompileError;
+
+    return compiler.function;
+}
+
 pub const Compiler = struct {
+    enclosing: ?*Compiler,
     vm: *VM,
     locals: ArrayList(Local),
     scopeDepth: usize,
     function: *Obj.Function,
 
-    pub fn init(vm: *VM) Compiler {
-        return Compiler{
-            .vm = vm,
-            .locals = ArrayList(Local).init(vm.allocator),
-            .scopeDepth = 0,
-            .function = undefined,
-        };
-    }
+    pub fn init(vm: *VM, functionType: Obj.FunctionType, enclosing: ?*Compiler) !Compiler {
+        var locals = ArrayList(Local).init(vm.allocator);
 
-    pub fn deinit(self: *Compiler) void {
-        self.locals.deinit();
-    }
-
-    pub fn compile(self: *Compiler, source: []const u8) !*Obj.Function {
-        // Stack slot 0 is reserved by the VM for the main function. This means
-        // we can't store a local in this position. Create a placeholder local
-        // which is never referenced so that locals on the stack are offset by
-        // 1.
-        try self.locals.append(Local{
+        // Stack slot 0 is reserved by the VM for the current function value.
+        // This means we can't store a local in this position. Create a
+        // placeholder local which is never referenced so that locals on the
+        // stack are offset by 1.
+        try locals.append(Local{
             .depth = 0,
             .name = undefined,
             .initialized = true,
         });
 
         // Implicit main function for the script as a whole.
-        self.function = try Obj.Function.create(self.vm, .Script);
+        return Compiler{
+            .enclosing = enclosing,
+            .vm = vm,
+            .locals = locals,
+            .scopeDepth = 0,
+            .function = try Obj.Function.create(vm, functionType),
+        };
+    }
 
-        var parser = Parser.init(self, source);
-
-        parser.advance();
-
-        while (!parser.match(TokenType.Eof)) {
-            try parser.declaration();
-        }
-
-        parser.consume(TokenType.Eof, "Expect end of expression.");
-
-        try parser.end();
-
-        if (parser.hadError) return error.CompileError;
-
-        return self.function;
+    pub fn deinit(self: *Compiler) void {
+        self.locals.deinit();
     }
 
     pub fn incScope(self: *Compiler) void {

@@ -3,11 +3,11 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const AutoHashMap = std.AutoHashMap;
 const Chunk = @import("./chunk.zig").Chunk;
-const Compiler = @import("./compiler.zig").Compiler;
 const Obj = @import("./object.zig").Obj;
 const OpCode = @import("./op_code.zig").OpCode;
 const StringHashMap = std.StringHashMap;
 const Value = @import("./value.zig").Value;
+const compile = @import("./compiler.zig").compile;
 const logger = @import("./logger.zig");
 const printValue = @import("./value.zig").print;
 
@@ -47,10 +47,7 @@ pub const VM = struct {
     }
 
     pub fn interpret(self: *VM, source: []const u8) !void {
-        var compiler = Compiler.init(self);
-        defer compiler.deinit();
-
-        const function = try compiler.compile(source);
+        const function = try compile(self, source);
         try self.push(function.obj.value());
         try self.frames.append(CallFrame{
             .function = function,

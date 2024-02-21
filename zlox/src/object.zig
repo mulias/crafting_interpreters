@@ -98,14 +98,14 @@ pub const Obj = struct {
         }
     };
 
+    pub const FunctionType = enum { Function, Script };
+
     pub const Function = struct {
         obj: Obj,
         arity: u8,
         chunk: Chunk,
         name: *String,
         functionType: FunctionType,
-
-        pub const FunctionType = enum { Function, Script };
 
         pub fn create(vm: *VM, functionType: FunctionType) !*Function {
             const obj = try Obj.allocate(vm, Function, .Function);

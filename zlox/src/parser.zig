@@ -107,7 +107,9 @@ pub const Parser = struct {
     }
 
     pub fn declaration(self: *Parser) ParserError!void {
-        if (self.match(.Var)) {
+        if (self.match(.Fun)) {
+            try self.funDeclaration();
+        } else if (self.match(.Var)) {
             try self.varDeclaration();
         } else {
             try self.statement();
@@ -156,6 +158,24 @@ pub const Parser = struct {
         {
             try self.emitOp(.Pop);
             _ = locals.pop();
+        }
+    }
+
+    fn funDeclaration(self: *Parser) !void {
+        self.consume(.Identifier, "Expect function name.");
+
+        if (self.compiler.isGlobalScope()) {
+            const name = try Obj.String.copy(self.vm, self.previous.lexeme);
+            try self.function(.Function);
+            try self.emitConstant(.DefineGlobal, name.obj.value());
+        } else {
+            const declared = try self.declareLocalVariable(self.previous);
+            if (!declared) return;
+            var local = self.compiler.locals.pop();
+            local.markInitialized();
+            try self.compiler.locals.append(local);
+
+            try self.function(.Function);
         }
     }
 
@@ -335,6 +355,18 @@ pub const Parser = struct {
         }
 
         self.consume(.RightBrace, "Expect '}' after block.");
+    }
+
+    fn function(self: *Parser, functionType: Obj.FunctionType) !void {
+        try self.initFunctionCompiler(functionType);
+        defer self.deinitFunctionCompiler();
+
+        self.beginScope();
+
+        self.consume(.LeftParen, "Expect '(' after function name.");
+        self.consume(.RightParen, "Expect ')' after parameters.");
+        self.consume(.LeftBrace, "Expect '{' before function body.");
+        try self.block();
     }
 
     fn number(self: *Parser) !void {
@@ -639,6 +671,18 @@ pub const Parser = struct {
             error.OutOfMemory => return error.OutOfMemory,
         };
         return true;
+    }
+
+    fn initFunctionCompiler(self: *Parser, functionType: Obj.FunctionType) !void {
+        var compiler = try Compiler.init(self.vm, functionType, self.compiler);
+        self.compiler = &compiler;
+    }
+
+    fn deinitFunctionCompiler(self: *Parser) void {
+        if (self.compiler.enclosing) |enclosing| {
+            self.compiler.deinit();
+            self.compiler = enclosing;
+        }
     }
 
     fn errorAtCurrent(self: *Parser, message: []const u8) void {
