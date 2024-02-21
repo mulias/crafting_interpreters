@@ -10,6 +10,7 @@ pub const Obj = struct {
     pub const Type = enum {
         String,
         Function,
+        NativeFunction,
     };
 
     pub fn allocate(vm: *VM, comptime T: type, objType: Type) !*Obj {
@@ -28,6 +29,7 @@ pub const Obj = struct {
         switch (self.objType) {
             .String => self.asString().destroy(vm),
             .Function => self.asFunction().destroy(vm),
+            .NativeFunction => self.asNativeFunction().destroy(vm),
         }
     }
 
@@ -39,6 +41,7 @@ pub const Obj = struct {
         switch (self.objType) {
             .String => printer("{s}", .{self.asString().bytes}),
             .Function => printer("<fn {s}>", .{self.asFunction().getName()}),
+            .NativeFunction => printer("<native fn {s}>", .{self.asNativeFunction().name.bytes}),
         }
     }
 
@@ -61,6 +64,10 @@ pub const Obj = struct {
 
     pub fn asFunction(self: *Obj) *Function {
         return @fieldParentPtr(Function, "obj", self);
+    }
+
+    pub fn asNativeFunction(self: *Obj) *NativeFunction {
+        return @fieldParentPtr(NativeFunction, "obj", self);
     }
 
     pub const String = struct {
@@ -138,6 +145,32 @@ pub const Obj = struct {
             } else {
                 unreachable;
             }
+        }
+    };
+
+    pub const NativeFunction = struct {
+        obj: Obj,
+        name: *String,
+        arity: u8,
+        function: NativeFunctionType,
+
+        pub const NativeFunctionType = *const fn (args: []Value) Value;
+
+        pub fn create(vm: *VM, name: *String, arity: u8, function: NativeFunctionType) !*NativeFunction {
+            const obj = try Obj.allocate(vm, NativeFunction, .NativeFunction);
+            const fun = obj.asNativeFunction();
+            fun.* = NativeFunction{
+                .obj = obj.*,
+                .arity = arity,
+                .name = name,
+                .function = function,
+            };
+
+            return fun;
+        }
+
+        pub fn destroy(self: *Obj.NativeFunction, vm: *VM) void {
+            vm.allocator.destroy(self);
         }
     };
 };

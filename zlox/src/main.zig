@@ -28,7 +28,7 @@ fn repl(allocator: Allocator) !void {
     const stdin = std.io.getStdIn().reader();
     var buffer: [256]u8 = undefined;
 
-    var vm = VM.init(allocator);
+    var vm = try VM.init(allocator);
     defer vm.deinit();
 
     while (true) {
@@ -44,7 +44,7 @@ fn repl(allocator: Allocator) !void {
 }
 
 fn runFile(allocator: Allocator, path: []const u8) !void {
-    var vm = VM.init(allocator);
+    var vm = try VM.init(allocator);
     defer vm.deinit();
 
     const source = try std.fs.cwd().readFileAlloc(allocator, path, 1e10);

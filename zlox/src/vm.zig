@@ -27,8 +27,8 @@ pub const VM = struct {
     globals: AutoHashMap(*Obj.String, Value),
     strings: StringHashMap(*Obj.String),
 
-    pub fn init(allocator: Allocator) VM {
-        return VM{
+    pub fn init(allocator: Allocator) !VM {
+        var vm = VM{
             .allocator = allocator,
             .stack = ArrayList(Value).init(allocator),
             .frames = ArrayList(CallFrame).init(allocator),
@@ -36,6 +36,10 @@ pub const VM = struct {
             .globals = AutoHashMap(*Obj.String, Value).init(allocator),
             .strings = StringHashMap(*Obj.String).init(allocator),
         };
+
+        try vm.defineNative("clock", 0, clockNative);
+
+        return vm;
     }
 
     pub fn deinit(self: *VM) void {
@@ -254,17 +258,33 @@ pub const VM = struct {
         try self.push(string.obj.value());
     }
 
-    fn callValue(self: *VM, value: Value, argCount: u8) !void {
-        if (value.isObj() and value.asObj().isType(.Function)) {
-            const fun = value.asObj().asFunction();
+    fn callValue(self: *VM, callee: Value, argCount: u8) !void {
+        if (!callee.isObj()) return self.runtimeError("Can only call functions and classes.", .{});
 
-            if (fun.arity == argCount) {
-                try self.addFrame(fun);
-            } else {
-                return self.runtimeError("Expected {} arguments but got {}.", .{ fun.arity, argCount });
-            }
-        } else {
-            return self.runtimeError("Can only call functions and classes.", .{});
+        const obj = callee.asObj();
+        switch (obj.objType) {
+            .Function => {
+                const fun = obj.asFunction();
+
+                if (fun.arity == argCount) {
+                    try self.addFrame(fun);
+                } else {
+                    return self.runtimeError("Expected {} arguments but got {}.", .{ fun.arity, argCount });
+                }
+            },
+            .NativeFunction => {
+                const fun = obj.asNativeFunction();
+
+                if (fun.arity == argCount) {
+                    const args = self.stack.items[self.stack.items.len - 1 - argCount ..];
+                    try self.stack.resize(self.stack.items.len - 1 - argCount);
+                    const result = fun.function(args);
+                    try self.push(result);
+                } else {
+                    return self.runtimeError("Expected {} arguments but got {}.", .{ fun.arity, argCount });
+                }
+            },
+            else => return self.runtimeError("Can only call functions and classes.", .{}),
         }
     }
 
@@ -314,10 +334,16 @@ pub const VM = struct {
     }
 
     fn runtimeError(self: *VM, comptime message: []const u8, args: anytype) !void {
-        const line = self.chunk().lines.items[self.frame().ip];
         logger.warn(message, args);
-        logger.warn("\n[line {d}] in script\n", .{line});
-        self.resetStack();
+
+        while (self.frames.items.len > 0) {
+            const callFrame = self.frames.pop();
+            const fun = callFrame.function;
+            const line = fun.chunk.lines.items[callFrame.ip - 1];
+            const name = fun.getName();
+            logger.warn("\n[line {d}] in {s}", .{ line, name });
+        }
+
         return error.RuntimeError;
     }
 
@@ -329,16 +355,34 @@ pub const VM = struct {
             object = next;
         }
     }
+
+    fn defineNative(self: *VM, name: []const u8, arity: u8, function: Obj.NativeFunction.NativeFunctionType) !void {
+        const nameString = try Obj.String.copy(self, name);
+        // NOTE put str on the stack immediately to make sure it doesn't
+        // get garbage collected when we allocate to create the native
+        // function below.
+        try self.push(nameString.obj.value());
+        const fun = try Obj.NativeFunction.create(self, nameString, arity, function);
+        const value = fun.obj.value();
+        try self.push(value);
+        try self.globals.put(nameString, value);
+        _ = self.pop();
+        _ = self.pop();
+    }
+
+    fn clockNative(_: []const Value) Value {
+        return Value{ .Number = @as(f64, @floatFromInt(std.time.milliTimestamp())) / 1000 };
+    }
 };
 
 test "number expression" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret("1 + 1;");
 }
 
 test "print expression" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\print "st" + "ri" + "ng";
@@ -347,7 +391,7 @@ test "print expression" {
 }
 
 test "global vars" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\var breakfast = "beignets";
@@ -359,7 +403,7 @@ test "global vars" {
 }
 
 test "local vars" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\{
@@ -383,7 +427,7 @@ test "local vars" {
 }
 
 test "print local vars" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\{
@@ -394,7 +438,7 @@ test "print local vars" {
 }
 
 test "global and local vars" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\var x = 1;
@@ -408,7 +452,7 @@ test "global and local vars" {
 }
 
 test "if when true" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\if (true) print 1;
@@ -417,7 +461,7 @@ test "if when true" {
 }
 
 test "if when false" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\if (false) print 1;
@@ -426,7 +470,7 @@ test "if when false" {
 }
 
 test "if/else when true" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\var x = 1;
@@ -439,7 +483,7 @@ test "if/else when true" {
 }
 
 test "if/else when false" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\var x = 1;
@@ -452,7 +496,7 @@ test "if/else when false" {
 }
 
 test "and" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\var a = true and true;
@@ -467,7 +511,7 @@ test "and" {
 }
 
 test "or" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\var a = true or true;
@@ -482,7 +526,7 @@ test "or" {
 }
 
 test "while" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\var i = 5;
@@ -495,7 +539,7 @@ test "while" {
 }
 
 test "for loop" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\for (var i = 0; i < 10; i = i + 1) {
@@ -506,7 +550,7 @@ test "for loop" {
 }
 
 test "print function as variable" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\fun areWeHavingItYet() {
@@ -518,7 +562,7 @@ test "print function as variable" {
 }
 
 test "call function" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try vm.interpret(
         \\fun sum(a, b, c) {
@@ -530,14 +574,14 @@ test "call function" {
 }
 
 test "compiler errors" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try std.testing.expectError(error.CompileError, vm.interpret("1 + "));
     try std.testing.expectError(error.CompileError, vm.interpret("a * b = c + d;"));
 }
 
 test "runtime errors" {
-    var vm = VM.init(std.testing.allocator);
+    var vm = try VM.init(std.testing.allocator);
     defer vm.deinit();
     try std.testing.expectError(error.RuntimeError, vm.interpret("1 + true;"));
     try std.testing.expectError(error.RuntimeError, vm.interpret(
