@@ -23,11 +23,11 @@ pub fn compile(vm: *VM, source: []const u8) !*Obj.Function {
 
     parser.consume(TokenType.Eof, "Expect end of expression.");
 
-    try parser.end();
+    var fun = try parser.end();
 
     if (parser.hadError) return error.CompileError;
 
-    return compiler.function;
+    return fun;
 }
 
 pub const Compiler = struct {

@@ -100,7 +100,7 @@ pub const Obj = struct {
         }
     };
 
-    pub const FunctionType = enum { Function, Script };
+    pub const FunctionType = enum { NamedFunction, Script };
 
     pub const Function = struct {
         obj: Obj,

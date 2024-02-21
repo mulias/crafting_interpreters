@@ -136,13 +136,20 @@ pub const Parser = struct {
         }
     }
 
-    pub fn end(self: *Parser) !void {
+    pub fn end(self: *Parser) !*Obj.Function {
         try self.emitReturn();
 
+        const func = self.compiler.function;
+
+        self.compiler = self.compiler.enclosing orelse undefined;
+
         if (!self.hadError) {
-            const label = self.compiler.function.getName();
-            self.chunk().disassemble(label);
+            logger.debug("\n", .{});
+            const label = func.getName();
+            func.chunk.disassemble(label);
         }
+
+        return func;
     }
 
     fn beginScope(self: *Parser) void {
@@ -360,10 +367,34 @@ pub const Parser = struct {
 
         self.beginScope();
 
+        // Params
         self.consume(.LeftParen, "Expect '(' after function name.");
+        if (!self.check(.RightParen)) {
+            while (true) {
+                if (self.compiler.function.arity >= 255) {
+                    self.errorAtCurrent("Can't have more than 255 parameters.");
+                    break;
+                }
+
+                self.compiler.function.arity += 1;
+
+                self.consume(.Identifier, "Expect parameter name.");
+
+                const declared = try self.declareLocal(self.previous);
+                if (!declared) return;
+                self.defineLocal();
+
+                if (!self.match(.Comma)) break;
+            }
+        }
         self.consume(.RightParen, "Expect ')' after parameters.");
+
+        // Body
         self.consume(.LeftBrace, "Expect '{' before function body.");
         try self.block();
+
+        var fun = try self.end();
+        try self.emitUnaryOp(.Constant, try self.makeConstant(fun.obj.value()));
     }
 
     fn number(self: *Parser) !void {

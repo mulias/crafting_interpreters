@@ -480,7 +480,7 @@ test "print function as variable" {
     defer vm.deinit();
     try vm.interpret(
         \\fun areWeHavingItYet() {
-        \\  print "Are we having it yet?";
+        \\  print "Yes we are!";
         \\}
         \\
         \\print areWeHavingItYet;
