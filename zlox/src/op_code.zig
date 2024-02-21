@@ -25,6 +25,7 @@ pub const OpCode = enum(u8) {
     Jump,
     JumpIfFalse,
     Loop,
+    Call,
     Return,
 
     pub fn toByte(op: OpCode) u8 {
@@ -44,6 +45,7 @@ pub const OpCode = enum(u8) {
             => op.constantInstruction(chunk, offset),
             .GetLocal,
             .SetLocal,
+            .Call,
             => op.byteInstruciton(chunk, offset),
             .Jump,
             .JumpIfFalse,

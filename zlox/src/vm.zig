@@ -49,11 +49,7 @@ pub const VM = struct {
     pub fn interpret(self: *VM, source: []const u8) !void {
         const function = try compile(self, source);
         try self.push(function.obj.value());
-        try self.frames.append(CallFrame{
-            .function = function,
-            .ip = 0,
-            .stackOffset = 0,
-        });
+        try self.addFrame(function);
 
         try self.run();
     }
@@ -182,7 +178,19 @@ pub const VM = struct {
                 const offset = self.readShort();
                 self.frame().ip -= offset;
             },
-            .Return => {},
+            .Call => {
+                const argCount = self.readByte();
+                try self.callValue(self.peek(argCount), argCount);
+            },
+            .Return => {
+                const result = self.pop();
+                const prevFrame = self.frames.pop();
+                if (self.frames.items.len == 0) return;
+
+                try self.stack.resize(prevFrame.stackOffset);
+
+                try self.push(result);
+            },
         }
     }
 
@@ -204,6 +212,14 @@ pub const VM = struct {
 
     pub fn setLocal(self: *VM, slot: usize, value: Value) void {
         self.stack.items[self.frame().stackOffset + slot] = value;
+    }
+
+    fn addFrame(self: *VM, function: *Obj.Function) !void {
+        try self.frames.append(CallFrame{
+            .function = function,
+            .ip = 0,
+            .stackOffset = self.stack.items.len - function.arity - 1,
+        });
     }
 
     fn sub(x: f64, y: f64) f64 {
@@ -236,6 +252,20 @@ pub const VM = struct {
 
         const string = try Obj.String.create(self, buffer);
         try self.push(string.obj.value());
+    }
+
+    fn callValue(self: *VM, value: Value, argCount: u8) !void {
+        if (value.isObj() and value.asObj().isFunction()) {
+            const fun = value.asObj().asFunction();
+
+            if (fun.arity == argCount) {
+                try self.addFrame(fun);
+            } else {
+                return self.runtimeError("Expected {} arguments but got {}.", .{ fun.arity, argCount });
+            }
+        } else {
+            return self.runtimeError("Can only call functions and classes.", .{});
+        }
     }
 
     fn readByte(self: *VM) u8 {
@@ -484,6 +514,18 @@ test "print function as variable" {
         \\}
         \\
         \\print areWeHavingItYet;
+    );
+}
+
+test "call function" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\fun sum(a, b, c) {
+        \\  return a + b + c;
+        \\}
+        \\
+        \\print 4 + sum(5, 6, 7);
     );
 }
 

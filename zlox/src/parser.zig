@@ -123,6 +123,8 @@ pub const Parser = struct {
             try self.printStatement();
         } else if (self.match(.If)) {
             try self.ifStatement();
+        } else if (self.match(.Return)) {
+            try self.returnStatement();
         } else if (self.match(.While)) {
             try self.whileStatement();
         } else if (self.match(.For)) {
@@ -244,6 +246,20 @@ pub const Parser = struct {
 
         // Patch the else jump, now that we know where the else branch ends
         self.patchJump(elseJumpIndex);
+    }
+
+    fn returnStatement(self: *Parser) !void {
+        if (self.compiler.function.isScript()) {
+            return self.errorAtPrevious("Cannot return from top-level code.");
+        }
+
+        if (self.match(.Semicolon)) {
+            try self.emitReturn();
+        } else {
+            try self.expression();
+            self.consume(.Semicolon, "Expect ';' after return value.");
+            try self.emitOp(.Return);
+        }
     }
 
     fn whileStatement(self: *Parser) !void {
@@ -507,6 +523,32 @@ pub const Parser = struct {
         }
     }
 
+    fn call(self: *Parser) !void {
+        const argCount = try self.argumentList();
+        try self.emitUnaryOp(.Call, argCount);
+    }
+
+    fn argumentList(self: *Parser) !u8 {
+        var argCount: u8 = 0;
+        if (!self.check(.RightParen)) {
+            while (true) {
+                if (argCount == std.math.maxInt(u8)) {
+                    self.errorAtCurrent(
+                        std.fmt.comptimePrint("Can't have more than {} arguments.", .{std.math.maxInt(u8)}),
+                    );
+                    break;
+                }
+
+                try self.expression();
+                argCount += 1;
+
+                if (!self.match(.Comma)) break;
+            }
+        }
+        self.consume(.RightParen, "Expect ')' after arguments.");
+        return argCount;
+    }
+
     fn and_(self: *Parser) !void {
         const endJumpIndex = try self.emitJump(.JumpIfFalse);
 
@@ -601,7 +643,8 @@ pub const Parser = struct {
             .LessEqual,
             => return self.binary(),
 
-            .LeftParen, .RightParen, .LeftBrace, .RightBrace, .Comma => {},
+            .LeftParen => return self.call(),
+            .RightParen, .LeftBrace, .RightBrace, .Comma => {},
             .Dot => {},
             .Semicolon => {},
 
@@ -637,6 +680,7 @@ pub const Parser = struct {
     }
 
     fn emitReturn(self: *Parser) !void {
+        try self.emitOp(.Nil);
         try self.emitOp(.Return);
     }
 
