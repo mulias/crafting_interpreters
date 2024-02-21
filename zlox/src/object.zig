@@ -104,16 +104,21 @@ pub const Obj = struct {
         obj: Obj,
         arity: u8,
         chunk: Chunk,
-        name: *String,
+        name: ?*String,
         functionType: FunctionType,
 
-        pub fn create(vm: *VM, functionType: FunctionType) !*Function {
+        pub fn create(vm: *VM, functionType: FunctionType, name: ?*String) !*Function {
             const obj = try Obj.allocate(vm, Function, .Function);
-            const function = obj.asFunction();
-            function.chunk = Chunk.init(vm.allocator);
-            function.functionType = functionType;
+            const fun = obj.asFunction();
+            fun.* = Function{
+                .obj = obj.*,
+                .arity = 0,
+                .chunk = Chunk.init(vm.allocator),
+                .name = name,
+                .functionType = functionType,
+            };
 
-            return function;
+            return fun;
         }
 
         pub fn destroy(self: *Function, vm: *VM) void {
@@ -130,8 +135,10 @@ pub const Obj = struct {
         pub fn getName(self: *Function) []const u8 {
             if (self.isScript()) {
                 return "script";
+            } else if (self.name) |name| {
+                return name.bytes;
             } else {
-                return self.name.bytes;
+                unreachable;
             }
         }
     };

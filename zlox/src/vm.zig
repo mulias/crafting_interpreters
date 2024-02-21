@@ -475,6 +475,18 @@ test "for loop" {
     );
 }
 
+test "print function as variable" {
+    var vm = VM.init(std.testing.allocator);
+    defer vm.deinit();
+    try vm.interpret(
+        \\fun areWeHavingItYet() {
+        \\  print "Are we having it yet?";
+        \\}
+        \\
+        \\print areWeHavingItYet;
+    );
+}
+
 test "compiler errors" {
     var vm = VM.init(std.testing.allocator);
     defer vm.deinit();

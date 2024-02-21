@@ -163,17 +163,17 @@ pub const Parser = struct {
 
     fn funDeclaration(self: *Parser) !void {
         self.consume(.Identifier, "Expect function name.");
+        const name = try Obj.String.copy(self.vm, self.previous.lexeme);
 
         if (self.compiler.isGlobalScope()) {
-            const name = try Obj.String.copy(self.vm, self.previous.lexeme);
-            try self.function(.Function);
+            try self.function(.NamedFunction, name);
             try self.emitConstant(.DefineGlobal, name.obj.value());
         } else {
             const declared = try self.declareLocal(self.previous);
             if (!declared) return;
             self.defineLocal();
 
-            try self.function(.Function);
+            try self.function(.NamedFunction, name);
         }
     }
 
@@ -352,9 +352,11 @@ pub const Parser = struct {
         self.consume(.RightBrace, "Expect '}' after block.");
     }
 
-    fn function(self: *Parser, functionType: Obj.FunctionType) !void {
-        try self.initFunctionCompiler(functionType);
-        defer self.deinitFunctionCompiler();
+    fn function(self: *Parser, functionType: Obj.FunctionType, name: *Obj.String) !void {
+        var compiler = try Compiler.init(self.vm, functionType, self.compiler, name);
+        defer compiler.deinit();
+
+        self.compiler = &compiler;
 
         self.beginScope();
 
@@ -676,18 +678,6 @@ pub const Parser = struct {
     // circularly.
     fn defineLocal(self: *Parser) void {
         self.compiler.locals.items[self.compiler.locals.items.len - 1].markInitialized();
-    }
-
-    fn initFunctionCompiler(self: *Parser, functionType: Obj.FunctionType) !void {
-        var compiler = try Compiler.init(self.vm, functionType, self.compiler);
-        self.compiler = &compiler;
-    }
-
-    fn deinitFunctionCompiler(self: *Parser) void {
-        if (self.compiler.enclosing) |enclosing| {
-            self.compiler.deinit();
-            self.compiler = enclosing;
-        }
     }
 
     fn errorAtCurrent(self: *Parser, message: []const u8) void {

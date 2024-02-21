@@ -10,7 +10,7 @@ const VM = @import("./vm.zig").VM;
 const logger = @import("./logger.zig");
 
 pub fn compile(vm: *VM, source: []const u8) !*Obj.Function {
-    var compiler = try Compiler.init(vm, .Script, null);
+    var compiler = try Compiler.init(vm, .Script, null, null);
     defer compiler.deinit();
 
     var parser = Parser.init(&compiler, source);
@@ -37,7 +37,7 @@ pub const Compiler = struct {
     scopeDepth: usize,
     function: *Obj.Function,
 
-    pub fn init(vm: *VM, functionType: Obj.FunctionType, enclosing: ?*Compiler) !Compiler {
+    pub fn init(vm: *VM, functionType: Obj.FunctionType, enclosing: ?*Compiler, functionName: ?*Obj.String) !Compiler {
         var locals = ArrayList(Local).init(vm.allocator);
 
         // Stack slot 0 is reserved by the VM for the current function value.
@@ -56,7 +56,7 @@ pub const Compiler = struct {
             .vm = vm,
             .locals = locals,
             .scopeDepth = 0,
-            .function = try Obj.Function.create(vm, functionType),
+            .function = try Obj.Function.create(vm, functionType, functionName),
         };
     }
 
