@@ -371,8 +371,10 @@ pub const Parser = struct {
         self.consume(.LeftParen, "Expect '(' after function name.");
         if (!self.check(.RightParen)) {
             while (true) {
-                if (self.compiler.function.arity >= 255) {
-                    self.errorAtCurrent("Can't have more than 255 parameters.");
+                if (self.compiler.function.arity == std.math.maxInt(u8)) {
+                    self.errorAtCurrent(
+                        std.fmt.comptimePrint("Can't have more than {} parameters.", .{std.math.maxInt(u8)}),
+                    );
                     break;
                 }
 
