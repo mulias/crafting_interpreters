@@ -169,11 +169,9 @@ pub const Parser = struct {
             try self.function(.Function);
             try self.emitConstant(.DefineGlobal, name.obj.value());
         } else {
-            const declared = try self.declareLocalVariable(self.previous);
+            const declared = try self.declareLocal(self.previous);
             if (!declared) return;
-            var local = self.compiler.locals.pop();
-            local.markInitialized();
-            try self.compiler.locals.append(local);
+            self.defineLocal();
 
             try self.function(.Function);
         }
@@ -187,14 +185,11 @@ pub const Parser = struct {
             try self.varDeclarationInitializer();
             try self.emitConstant(.DefineGlobal, name.obj.value());
         } else {
-            const declared = try self.declareLocalVariable(self.previous);
+            const declared = try self.declareLocal(self.previous);
             if (!declared) return;
 
             try self.varDeclarationInitializer();
-
-            var local = self.compiler.locals.pop();
-            local.markInitialized();
-            try self.compiler.locals.append(local);
+            self.defineLocal();
         }
     }
 
@@ -662,7 +657,8 @@ pub const Parser = struct {
         return @as(u8, @intCast(idx));
     }
 
-    fn declareLocalVariable(self: *Parser, name: Token) !bool {
+    // Add a local variable.
+    fn declareLocal(self: *Parser, name: Token) !bool {
         self.compiler.addLocal(name) catch |err| switch (err) {
             error.VariableNameUsedInScope => {
                 self.errorAtPrevious("Already a variable with this name in this scope.");
@@ -671,6 +667,15 @@ pub const Parser = struct {
             error.OutOfMemory => return error.OutOfMemory,
         };
         return true;
+    }
+
+    // Finalize the most recently declared local variable. In some cases a
+    // local is declared then immediately defined, but in other cases the local
+    // is declared, an initializer is parsed, and then the local is defined.
+    // This prevents issues such as `var a = a`, since a local can't be defined
+    // circularly.
+    fn defineLocal(self: *Parser) void {
+        self.compiler.locals.items[self.compiler.locals.items.len - 1].markInitialized();
     }
 
     fn initFunctionCompiler(self: *Parser, functionType: Obj.FunctionType) !void {
